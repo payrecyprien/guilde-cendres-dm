@@ -721,6 +721,14 @@ body {
   pointer-events: none;
 }
 
+.fog-of-war {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  pointer-events: none;
+  transition: background 0.15s ease-out;
+}
+
 .objective-tile {
   width: 100%;
   height: 100%;
@@ -735,6 +743,21 @@ body {
   font-size: 22px;
   filter: drop-shadow(0 0 6px rgba(255, 215, 0, 0.5));
   animation: objectiveSpin 4s linear infinite;
+}
+
+.objective-tile-locked {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle, rgba(100, 80, 60, 0.08), transparent 70%);
+}
+
+.objective-icon-locked {
+  font-size: 16px;
+  opacity: 0.4;
+  filter: grayscale(1);
 }
 
 @keyframes objectivePulse {

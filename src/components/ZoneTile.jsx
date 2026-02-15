@@ -10,7 +10,7 @@ const BASE = {
   justifyContent: "center",
 };
 
-export default function ZoneTile({ type, x, y, biome }) {
+export default function ZoneTile({ type, x, y, biome, objectiveUnlocked }) {
   const style = { ...BASE, left: x * TILE_SIZE, top: y * TILE_SIZE };
 
   switch (type) {
@@ -75,9 +75,15 @@ export default function ZoneTile({ type, x, y, biome }) {
     case ZT.OBJECTIVE:
       return (
         <div style={{ ...style, background: biome.floor1 }}>
-          <div className="objective-tile">
-            <span className="objective-icon">⭐</span>
-          </div>
+          {objectiveUnlocked ? (
+            <div className="objective-tile">
+              <span className="objective-icon">⭐</span>
+            </div>
+          ) : (
+            <div className="objective-tile-locked">
+              <span className="objective-icon-locked">🔒</span>
+            </div>
+          )}
         </div>
       );
 

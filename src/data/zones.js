@@ -20,6 +20,9 @@ export const BIOME_STYLES = {
     entry: "#2a3520", objective: "#3a5025",
     wallIcon: "🌲",
     fog: "rgba(80, 120, 80, 0.04)",
+    limitedVision: true,
+    visionRadius: 3.5,
+    visionColor: "rgba(8, 15, 5, 0.97)",
   },
   ruines_nord: {
     name: "Ruines du Nord",
@@ -29,6 +32,7 @@ export const BIOME_STYLES = {
     entry: "#2e2a28", objective: "#3a3530",
     wallIcon: "🧱",
     fog: "rgba(100, 90, 80, 0.04)",
+    limitedVision: false,
   },
   mine: {
     name: "Mine abandonnée",
@@ -38,6 +42,9 @@ export const BIOME_STYLES = {
     entry: "#28241e", objective: "#352e22",
     wallIcon: "⬛",
     fog: "rgba(60, 50, 40, 0.06)",
+    limitedVision: true,
+    visionRadius: 2.5,
+    visionColor: "rgba(5, 4, 2, 0.98)",
   },
   marais: {
     name: "Marais de Valtorve",
@@ -47,6 +54,9 @@ export const BIOME_STYLES = {
     entry: "#282e22", objective: "#303828",
     wallIcon: "💧",
     fog: "rgba(60, 90, 60, 0.06)",
+    limitedVision: true,
+    visionRadius: 4,
+    visionColor: "rgba(10, 15, 8, 0.95)",
   },
   route_commerce: {
     name: "Route commerciale",
@@ -56,6 +66,7 @@ export const BIOME_STYLES = {
     entry: "#302a22", objective: "#3a3225",
     wallIcon: "🪵",
     fog: "rgba(100, 80, 50, 0.03)",
+    limitedVision: false,
   },
   village_est: {
     name: "Village de l'Est",
@@ -65,6 +76,7 @@ export const BIOME_STYLES = {
     entry: "#2e2820", objective: "#352e22",
     wallIcon: "🏠",
     fog: "rgba(80, 60, 40, 0.04)",
+    limitedVision: false,
   },
 };
 

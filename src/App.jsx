@@ -40,6 +40,15 @@ export default function App() {
   const gameRef = useRef(null);
   const isGenerating = useRef(false);
 
+  // ─── DERIVED: is the objective reachable? ───
+  const objectiveUnlocked = (() => {
+    if (!activeQuest) return false;
+    // Extermination: must kill all monsters
+    if (activeQuest.type === "extermination") return zoneMonsters.length === 0;
+    // Other types: always unlocked
+    return true;
+  })();
+
   // ─── HOOKS ───
   const dialogue = useDialogue();
 
@@ -223,6 +232,16 @@ export default function App() {
   }, [dialogue]);
 
   const interactObjective = useCallback(() => {
+    if (!objectiveUnlocked) {
+      const hint = activeQuest?.type === "extermination"
+        ? "Élimine toutes les créatures de la zone avant de compléter l'objectif."
+        : "L'objectif n'est pas encore accessible.";
+      dialogue.open([{
+        type: "text", speaker: "— Objectif —", speakerColor: "#8b7355",
+        text: `🔒 ${hint} (${zoneMonsters.length} monstre${zoneMonsters.length > 1 ? "s" : ""} restant${zoneMonsters.length > 1 ? "s" : ""})`,
+      }]);
+      return;
+    }
     dialogue.open([
       {
         type: "text", speaker: "— Objectif —", speakerColor: "#ffd700",
@@ -236,7 +255,7 @@ export default function App() {
         ],
       },
     ]);
-  }, [activeQuest, dialogue]);
+  }, [activeQuest, objectiveUnlocked, zoneMonsters.length, dialogue]);
 
   const encounterMonster = useCallback((monster) => {
     const playerDmg = Math.max(1, player.atk - monster.def);
@@ -474,10 +493,10 @@ export default function App() {
       setHighlightedMonster(monster || null);
       if (monster) setShowHint(`⚔ ${monster.name}`);
       else if (tile === ZT.ENTRY) setShowHint("🚪 Retour");
-      else if (tile === ZT.OBJECTIVE) setShowHint("⭐ Objectif");
+      else if (tile === ZT.OBJECTIVE) setShowHint(objectiveUnlocked ? "⭐ Objectif" : `🔒 Objectif (${zoneMonsters.length} restants)`);
       else setShowHint(null);
     }
-  }, [scene, movement.pos, movement.facing, activeQuest, zoneData, getFacingTile, getNPCAt, getMonsterAt]);
+  }, [scene, movement.pos, movement.facing, activeQuest, zoneData, objectiveUnlocked, zoneMonsters.length, getFacingTile, getNPCAt, getMonsterAt]);
 
   // Auto-focus
   useEffect(() => { gameRef.current?.focus(); }, []);
@@ -511,6 +530,8 @@ export default function App() {
             zoneBiome={zoneBiome}
             monsters={zoneMonsters}
             highlightedMonster={highlightedMonster}
+            playerPos={movement.pos}
+            objectiveUnlocked={objectiveUnlocked}
           />
         )}
 
