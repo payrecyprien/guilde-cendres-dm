@@ -1,26 +1,78 @@
-import { DIALOGUES } from "../data/guild";
-
-export default function DialogueBox({ dialogueKey, dialogueIndex }) {
-  const lines = DIALOGUES[dialogueKey];
-  if (!lines) return null;
-
-  const line = lines[Math.min(dialogueIndex, lines.length - 1)];
-  const isNPC = dialogueKey === "quest" || dialogueKey === "armor";
+/**
+ * Dialogue system supporting:
+ * - Static text lines
+ * - Loading state (waiting for AI)
+ * - Player choices (accept/decline, buy items)
+ */
+export default function DialogueBox({ step, onAdvance, onChoice, onClose }) {
+  if (!step) return null;
 
   return (
     <div className="dialogue-box">
+      {/* Speaker */}
       <div
         className="dialogue-speaker"
-        style={{ color: isNPC ? "#d4a856" : "#8b7355" }}
+        style={{ color: step.speakerColor || "#d4a856" }}
       >
-        {line.speaker}
+        {step.speaker}
       </div>
-      <div className="dialogue-text">{line.text}</div>
-      <div className="dialogue-controls">
-        <span className="blink-text">[E]</span> continuer
-        <span className="dialogue-sep">|</span>
-        <span className="blink-text">[ESC]</span> fermer
+
+      {/* Text */}
+      <div className="dialogue-text">
+        {step.type === "loading" ? (
+          <span className="dialogue-loading">
+            <span className="loading-dots">⏳</span> {step.text || "..."}
+          </span>
+        ) : (
+          step.text
+        )}
       </div>
+
+      {/* Quest detail block */}
+      {step.questDetail && (
+        <div className="dialogue-quest-detail">
+          <div className="quest-detail-title">📜 {step.questDetail.title}</div>
+          <div className="quest-detail-desc">{step.questDetail.description}</div>
+          <div className="quest-detail-meta">
+            <span>📍 {step.questDetail.location_name}</span>
+            <span>⚔ Difficulté {step.questDetail.difficulty}/5</span>
+            <span>💰 {step.questDetail.reward_gold} or</span>
+            <span>✨ {step.questDetail.reward_xp} XP</span>
+          </div>
+        </div>
+      )}
+
+      {/* Choices */}
+      {step.type === "choice" && step.choices && (
+        <div className="dialogue-choices">
+          {step.choices.map((c, i) => (
+            <button
+              key={i}
+              className={`dialogue-choice-btn ${c.style || ""}`}
+              onClick={() => onChoice(c.action)}
+            >
+              {c.label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Controls */}
+      {step.type !== "choice" && step.type !== "loading" && (
+        <div className="dialogue-controls">
+          <span className="blink-text">[E]</span> continuer
+          <span className="dialogue-sep">|</span>
+          <span className="blink-text">[ESC]</span> fermer
+        </div>
+      )}
+
+      {step.type === "choice" && (
+        <div className="dialogue-controls">
+          <span style={{ color: "#5a4a35" }}>Choisis une option · Clique ou [1] [2]</span>
+          <span className="dialogue-sep">|</span>
+          <span className="blink-text">[ESC]</span> fermer
+        </div>
+      )}
     </div>
   );
 }

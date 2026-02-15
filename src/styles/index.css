@@ -468,6 +468,108 @@ body {
   margin: 0 6px;
 }
 
+/* ─── DIALOGUE CHOICES ─── */
+.dialogue-choices {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+
+.dialogue-choice-btn {
+  font-family: "Cinzel", serif;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  letter-spacing: 0.5px;
+  border: 1px solid;
+}
+
+.dialogue-choice-btn.choice-accept {
+  background: rgba(106, 159, 74, 0.12);
+  border-color: rgba(106, 159, 74, 0.3);
+  color: #8fc06a;
+}
+
+.dialogue-choice-btn.choice-accept:hover {
+  background: rgba(106, 159, 74, 0.22);
+  border-color: rgba(106, 159, 74, 0.5);
+  transform: translateY(-1px);
+}
+
+.dialogue-choice-btn.choice-decline {
+  background: rgba(180, 80, 60, 0.1);
+  border-color: rgba(180, 80, 60, 0.25);
+  color: #b07060;
+}
+
+.dialogue-choice-btn.choice-decline:hover {
+  background: rgba(180, 80, 60, 0.2);
+  border-color: rgba(180, 80, 60, 0.4);
+  transform: translateY(-1px);
+}
+
+.dialogue-choice-btn.choice-disabled {
+  background: rgba(80, 70, 55, 0.1);
+  border-color: rgba(80, 70, 55, 0.2);
+  color: #5a4a35;
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* ─── QUEST DETAIL CARD ─── */
+.dialogue-quest-detail {
+  margin-top: 10px;
+  padding: 10px 14px;
+  background: rgba(90, 143, 212, 0.06);
+  border: 1px solid rgba(90, 143, 212, 0.15);
+  border-radius: 6px;
+}
+
+.quest-detail-title {
+  font-family: "Cinzel", serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: #6fa0e0;
+  margin-bottom: 6px;
+  letter-spacing: 0.5px;
+}
+
+.quest-detail-desc {
+  font-family: "Crimson Text", Georgia, serif;
+  font-size: 12px;
+  color: #a09070;
+  line-height: 1.6;
+  margin-bottom: 8px;
+}
+
+.quest-detail-meta {
+  display: flex;
+  gap: 16px;
+  font-size: 10px;
+  color: #8b7355;
+  flex-wrap: wrap;
+}
+
+/* ─── LOADING ─── */
+.dialogue-loading {
+  color: #8b7355;
+  font-style: italic;
+}
+
+.loading-dots {
+  display: inline-block;
+  animation: loadingSpin 1.5s linear infinite;
+}
+
+@keyframes loadingSpin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
 /* ─── HUD ─── */
 .hud {
   margin-top: 14px;
