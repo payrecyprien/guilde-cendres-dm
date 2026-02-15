@@ -226,7 +226,7 @@ export default function App() {
       text: "Return to the guild? (Quest will be abandoned if not completed)",
       choices: [
         { label: "✅ Return to guild", action: "return_guild", style: "choice-accept" },
-        { label: "❌ Continue", action: "cancel", style: "choice-decline" },
+        { label: "❌ Continue", action: "stay_zone", style: "choice-decline" },
       ],
     }]);
   }, [dialogue]);
@@ -409,6 +409,10 @@ export default function App() {
 
     if (action === "leave_shop" || action === "cancel") {
       dialogue.close();
+    }
+    if (action === "stay_zone") {
+      dialogue.close();
+      setPlayerPos((prev) => ({ x: prev.x, y: prev.y - 1 }));
     }
   }, [pendingQuest, player, activeQuest, zoneMonsters, dialogue, returnToGuild]);
 
