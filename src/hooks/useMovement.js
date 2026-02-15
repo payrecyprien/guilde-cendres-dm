@@ -1,60 +1,56 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { DIRECTIONS, KEY_MAP, INTERACT_KEYS } from "../data/constants";
 
 /**
  * Hook for player movement and keyboard input.
- *
- * @param {Object} params
- * @param {Function} params.isWalkable - (x, y) => boolean
- * @param {Function} params.onInteract - called when player presses interact key
- * @param {boolean}  params.dialogueOpen - blocks movement when true
- * @param {Function} params.onDialogueAdvance - advance dialogue on E/Space
- * @param {Function} params.onDialogueClose - close dialogue on Escape
- * @param {Object}   params.dialogueStep - current dialogue step (for choice handling)
- * @param {Function} params.onChoice - (action) => void for choice buttons
- * @param {boolean}  params.disabled - blocks all input when true
- * @param {string}   params.initialFacing - "up"|"down"|"left"|"right"
+ * Uses refs for callbacks to avoid circular dependency issues in production builds.
  */
-export default function useMovement({
-  isWalkable,
-  onInteract,
-  dialogueOpen,
-  onDialogueAdvance,
-  onDialogueClose,
-  dialogueStep,
-  onChoice,
-  disabled = false,
-  initialPos = { x: 6, y: 7 },
-  initialFacing = "up",
-}) {
+export default function useMovement({ initialPos = { x: 6, y: 7 }, initialFacing = "up" }) {
   const [pos, setPos] = useState(initialPos);
   const [facing, setFacing] = useState(initialFacing);
 
-  // Allow external position resets (scene transitions)
+  // Callback refs — always up-to-date, no circular deps
+  const callbacksRef = useRef({
+    isWalkable: () => false,
+    onInteract: () => {},
+    dialogueOpen: false,
+    onDialogueAdvance: () => {},
+    onDialogueClose: () => {},
+    dialogueStep: null,
+    onChoice: () => {},
+    disabled: false,
+  });
+
+  // Update callbacks (called every render from the component)
+  const updateCallbacks = useCallback((cbs) => {
+    Object.assign(callbacksRef.current, cbs);
+  }, []);
+
   const resetPosition = useCallback((newPos, newFacing = "up") => {
     setPos(newPos);
     setFacing(newFacing);
   }, []);
 
-  const handleKeyDown = useCallback(
-    (e) => {
-      if (disabled) return;
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      const cbs = callbacksRef.current;
+
+      if (cbs.disabled) return;
 
       // ─── DIALOGUE MODE ───
-      if (dialogueOpen) {
+      if (cbs.dialogueOpen) {
         if (INTERACT_KEYS.has(e.key)) {
           e.preventDefault();
-          onDialogueAdvance?.();
+          cbs.onDialogueAdvance?.();
         }
-        if (e.key === "Escape" && dialogueStep?.type !== "loading") {
-          onDialogueClose?.();
+        if (e.key === "Escape" && cbs.dialogueStep?.type !== "loading") {
+          cbs.onDialogueClose?.();
         }
-        // Number keys for choices
-        if (dialogueStep?.type === "choice" && dialogueStep.choices) {
+        if (cbs.dialogueStep?.type === "choice" && cbs.dialogueStep.choices) {
           const num = parseInt(e.key);
-          if (num >= 1 && num <= dialogueStep.choices.length) {
+          if (num >= 1 && num <= cbs.dialogueStep.choices.length) {
             e.preventDefault();
-            onChoice?.(dialogueStep.choices[num - 1].action);
+            cbs.onChoice?.(cbs.dialogueStep.choices[num - 1].action);
           }
         }
         return;
@@ -69,23 +65,20 @@ export default function useMovement({
         setPos((prev) => {
           const nx = prev.x + dx;
           const ny = prev.y + dy;
-          return isWalkable(nx, ny) ? { x: nx, y: ny } : prev;
+          return cbs.isWalkable(nx, ny) ? { x: nx, y: ny } : prev;
         });
       }
 
       // ─── INTERACT ───
       if (INTERACT_KEYS.has(e.key)) {
         e.preventDefault();
-        onInteract?.();
+        cbs.onInteract?.();
       }
-    },
-    [disabled, dialogueOpen, dialogueStep, isWalkable, onInteract, onDialogueAdvance, onDialogueClose, onChoice]
-  );
+    };
 
-  useEffect(() => {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [handleKeyDown]);
+  }, []); // Single listener, reads from ref
 
-  return { pos, facing, setPos, setFacing, resetPosition };
+  return { pos, facing, setPos, setFacing, resetPosition, updateCallbacks };
 }

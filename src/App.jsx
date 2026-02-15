@@ -53,6 +53,7 @@ export default function App() {
   // ─── HOOKS ───
   const dialogue = useDialogue();
   const combat = useCombat();
+  const movement = useMovement({ initialPos: { ...GUILD_START }, initialFacing: "up" });
 
   // Helpers
   const getNPCAt = useCallback(
@@ -470,8 +471,8 @@ export default function App() {
     }
   }, [pendingQuest, player, activeQuest, zoneMonsters, dialogue, returnToGuild]);
 
-  // ─── MOVEMENT HOOK ───
-  const movement = useMovement({
+  // ─── SYNC MOVEMENT CALLBACKS (ref-based, no circular deps) ───
+  movement.updateCallbacks({
     isWalkable,
     onInteract: handleInteract,
     dialogueOpen: dialogue.isOpen,
@@ -480,8 +481,6 @@ export default function App() {
     dialogueStep: dialogue.currentStep,
     onChoice: handleChoice,
     disabled: scene === SCENE.COMBAT,
-    initialPos: { ...GUILD_START },
-    initialFacing: "up",
   });
 
   // ─── AUTO-INTERACT: step on objective/entry ───
