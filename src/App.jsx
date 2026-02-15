@@ -111,7 +111,7 @@ export default function App() {
       console.error("Quest gen failed:", err);
       dialogue.replaceSteps([{
         type: "text", speaker: "Commandant Varek",
-        text: "Le tableau est vide aujourd'hui. Reviens plus tard.",
+        text: `[Erreur] ${err.message || err}`,
       }]);
     }
     isGenerating.current = false;
@@ -194,7 +194,7 @@ export default function App() {
       console.error("Zone gen failed:", err);
       dialogue.replaceSteps([{
         type: "text", speaker: "— Système —", speakerColor: "#c0392b",
-        text: "Échec de la génération. Réessaie en repassant par la porte.",
+        text: `[Erreur zone] ${err.message || err}`,
       }]);
     }
     isGenerating.current = false;
