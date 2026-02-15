@@ -35,8 +35,8 @@ export default function DialogueBox({ step, onAdvance, onChoice, onClose }) {
           <div className="quest-detail-desc">{step.questDetail.description}</div>
           <div className="quest-detail-meta">
             <span>📍 {step.questDetail.location_name}</span>
-            <span>⚔ Difficulté {step.questDetail.difficulty}/5</span>
-            <span>💰 {step.questDetail.reward_gold} or</span>
+            <span>⚔ Difficulty {step.questDetail.difficulty}/5</span>
+            <span>💰 {step.questDetail.reward_gold} gold</span>
             <span>✨ {step.questDetail.reward_xp} XP</span>
           </div>
         </div>
@@ -68,7 +68,7 @@ export default function DialogueBox({ step, onAdvance, onChoice, onClose }) {
 
       {step.type === "choice" && (
         <div className="dialogue-controls">
-          <span style={{ color: "#5a4a35" }}>Choisis une option · Clique ou [1] [2]</span>
+          <span style={{ color: "#5a4a35" }}>Choose an option · Click or [1] [2]</span>
           <span className="dialogue-sep">|</span>
           <span className="blink-text">[ESC]</span> fermer
         </div>

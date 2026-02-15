@@ -48,8 +48,8 @@ export default async function handler(req, res) {
 
     if (!narration) {
       return res.status(200).json({
-        player_action_text: "Tu passes à l'action.",
-        monster_action_text: "La créature riposte.",
+        player_action_text: "You spring into action.",
+        monster_action_text: "The creature retaliates.",
         ambient_text: null,
       });
     }
@@ -57,8 +57,8 @@ export default async function handler(req, res) {
     return res.status(200).json(narration);
   } catch (err) {
     return res.status(200).json({
-      player_action_text: "Tu frappes de toutes tes forces.",
-      monster_action_text: "La créature grogne et contre-attaque.",
+      player_action_text: "You strike with all your might.",
+      monster_action_text: "The creature snarls and counterattacks.",
       ambient_text: null,
     });
   }

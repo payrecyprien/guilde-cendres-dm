@@ -13,7 +13,7 @@ export const ZONE_WALKABLE = new Set([ZT.FLOOR, ZT.ENTRY, ZT.OBJECTIVE]);
 // ─── BIOME PALETTES ───
 export const BIOME_STYLES = {
   brumesombre: {
-    name: "Forêt de Brumesombre",
+    name: "Brumesombre Forest",
     floor1: "#2a3520", floor2: "#283218",
     wall: "#1a2810", wallDetail: "#3a5025",
     obstacle: "#354a28", obstacleIcon: "🌿",
@@ -25,7 +25,7 @@ export const BIOME_STYLES = {
     visionColor: "rgba(8, 15, 5, 0.97)",
   },
   ruines_nord: {
-    name: "Ruines du Nord",
+    name: "Northern Ruins",
     floor1: "#2e2a28", floor2: "#322e2a",
     wall: "#1c1a18", wallDetail: "#4a4540",
     obstacle: "#3a3530", obstacleIcon: "🪨",
@@ -35,7 +35,7 @@ export const BIOME_STYLES = {
     limitedVision: false,
   },
   mine: {
-    name: "Mine abandonnée",
+    name: "Abandoned Mine",
     floor1: "#28241e", floor2: "#2c2820",
     wall: "#181510", wallDetail: "#4a4030",
     obstacle: "#352e22", obstacleIcon: "⛏",
@@ -47,7 +47,7 @@ export const BIOME_STYLES = {
     visionColor: "rgba(5, 4, 2, 0.98)",
   },
   marais: {
-    name: "Marais de Valtorve",
+    name: "Valtorve Marshes",
     floor1: "#282e22", floor2: "#2a3024",
     wall: "#1a2018", wallDetail: "#3a4a30",
     obstacle: "#303828", obstacleIcon: "🌾",
@@ -59,7 +59,7 @@ export const BIOME_STYLES = {
     visionColor: "rgba(10, 15, 8, 0.95)",
   },
   route_commerce: {
-    name: "Route commerciale",
+    name: "Trade Road",
     floor1: "#302a22", floor2: "#342e24",
     wall: "#1c1810", wallDetail: "#5a4a35",
     obstacle: "#3a3225", obstacleIcon: "📦",
@@ -69,7 +69,7 @@ export const BIOME_STYLES = {
     limitedVision: false,
   },
   village_est: {
-    name: "Village de l'Est",
+    name: "Eastern Village",
     floor1: "#2e2820", floor2: "#322c24",
     wall: "#1a1510", wallDetail: "#4a3d2e",
     obstacle: "#352e22", obstacleIcon: "🏺",

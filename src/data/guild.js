@@ -23,8 +23,8 @@ export const NPCS = [
     x: 5,
     y: 3,
     type: "quest",
-    name: "Commandant Varek",
-    title: "Donneur de contrats",
+    name: "Commander Varek",
+    title: "Contract Giver",
     colors: { body: "#4a6080", head: "#d4a870", accent: "#c0392b", icon: "⚔" },
   },
   {
@@ -33,60 +33,30 @@ export const NPCS = [
     y: 2,
     type: "armor",
     name: "Forge-Marteau",
-    title: "Armurier",
+    title: "Armorer",
     colors: { body: "#705030", head: "#d4a870", accent: "#8b6914", icon: "🔨" },
   },
 ];
 
-// ─── STATIC DIALOGUES (will be replaced by AI in Session 2) ───
+// ─── STATIC DIALOGUES (fallback) ───
 export const DIALOGUES = {
   quest: [
-    {
-      speaker: "Commandant Varek",
-      text: "Bienvenue à la Guilde des Cendres, mercenaire. On a toujours besoin de lames ici.",
-    },
-    {
-      speaker: "Commandant Varek",
-      text: "J'ai des contrats sur le tableau. Exterminations, escortes, récupérations... Le choix ne manque pas.",
-    },
-    {
-      speaker: "Commandant Varek",
-      text: "La forêt de Brumesombre pose problème ces derniers temps. Des créatures rôdent trop près du village. Ça t'intéresse ?",
-    },
-    {
-      speaker: "Commandant Varek",
-      text: "Équipe-toi chez Forge-Marteau avant de partir. Un mercenaire mort ne rapporte rien à la guilde.",
-    },
+    { speaker: "Commander Varek", text: "Welcome to the Ash Guild, mercenary. We always need blades around here." },
+    { speaker: "Commander Varek", text: "I've got contracts on the board. Exterminations, escorts, retrievals... Take your pick." },
+    { speaker: "Commander Varek", text: "Brumesombre Forest has been trouble lately. Creatures prowling too close to the village. Interested?" },
+    { speaker: "Commander Varek", text: "Gear up at Forge-Marteau's before heading out. A dead mercenary earns the guild nothing." },
   ],
   armor: [
-    {
-      speaker: "Forge-Marteau",
-      text: "*frappe l'enclume* ... Hm ? Tu veux du matériel ?",
-    },
-    {
-      speaker: "Forge-Marteau",
-      text: "Rapporte-moi des composants de tes missions. Crocs, écailles, minerais... Je peux en faire quelque chose.",
-    },
-    {
-      speaker: "Forge-Marteau",
-      text: "J'ai une épée courte et un bouclier en bois en stock. C'est pas du luxe, mais ça fait le travail.",
-    },
-    {
-      speaker: "Forge-Marteau",
-      text: "Reviens me voir quand t'auras du matériau intéressant. Là je pourrai forger du vrai équipement.",
-    },
+    { speaker: "Forge-Marteau", text: "*strikes the anvil* ... Hm? You need equipment?" },
+    { speaker: "Forge-Marteau", text: "Bring me components from your missions. Fangs, scales, ores... I can work with those." },
+    { speaker: "Forge-Marteau", text: "I've got a short sword and a wooden shield in stock. Nothing fancy, but they get the job done." },
+    { speaker: "Forge-Marteau", text: "Come back when you've got interesting materials. Then I can forge the real stuff." },
   ],
   door: [
-    {
-      speaker: "Porte de la guilde",
-      text: "La porte mène vers les terres de Cendrebourg. Accepte d'abord un contrat auprès du Commandant Varek.",
-    },
+    { speaker: "Guild Door", text: "The door leads to the lands of Cendrebourg. Accept a contract from Commander Varek first." },
   ],
   chest: [
-    {
-      speaker: "Coffre de la guilde",
-      text: "Le coffre commun de la guilde. Vide pour l'instant — rapporte du butin de tes missions.",
-    },
+    { speaker: "Guild Chest", text: "The guild's common chest. Empty for now — bring back loot from your missions." },
   ],
 };
 

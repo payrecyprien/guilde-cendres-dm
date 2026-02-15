@@ -85,7 +85,7 @@ export default function CombatScene({
       {/* Player area */}
       <div className="combat-player-area">
         <div className="combat-player-info">
-          <div className="combat-player-name">Mercenaire</div>
+          <div className="combat-player-name">Mercenary</div>
           <div className="combat-hp-bar">
             <div className="combat-hp-fill player-hp" style={{ width: `${playerHpPercent}%` }} />
             <span className="combat-hp-text">{player.hp} / {player.maxHp}</span>
@@ -100,11 +100,11 @@ export default function CombatScene({
           <div className="combat-actions">
             <button className="combat-btn btn-attack" onClick={() => onAction("attack")}>
               <span className="btn-icon">⚔</span>
-              <span className="btn-label">Attaquer</span>
+              <span className="btn-label">Attack</span>
             </button>
             <button className="combat-btn btn-defend" onClick={() => onAction("defend")}>
               <span className="btn-icon">🛡</span>
-              <span className="btn-label">Défendre</span>
+              <span className="btn-label">Defend</span>
             </button>
             <button
               className={`combat-btn btn-potion ${player.hp >= player.maxHp ? "btn-disabled" : ""}`}
@@ -115,14 +115,14 @@ export default function CombatScene({
             </button>
             <button className="combat-btn btn-flee" onClick={() => onAction("flee")}>
               <span className="btn-icon">🏃</span>
-              <span className="btn-label">Fuir</span>
+              <span className="btn-label">Flee</span>
             </button>
           </div>
         )}
 
         {phase === "resolving" && (
           <div className="combat-actions">
-            <div className="combat-waiting">Le combat fait rage...</div>
+            <div className="combat-waiting">The battle rages on...</div>
           </div>
         )}
 
@@ -130,17 +130,17 @@ export default function CombatScene({
           <div className="combat-end">
             {phase === "victory" && loot && (
               <div className="combat-loot">
-                Butin : <span className="loot-gold">+{loot.gold} or</span> · <span className="loot-xp">+{loot.xp} XP</span>
+                Loot: <span className="loot-gold">+{loot.gold} gold</span> · <span className="loot-xp">+{loot.xp} XP</span>
               </div>
             )}
             {phase === "defeat" && (
-              <div className="combat-defeat-text">Tu t'es fait vaincre...</div>
+              <div className="combat-defeat-text">You have been defeated...</div>
             )}
             {phase === "fled" && (
-              <div className="combat-fled-text">Tu as réussi à fuir.</div>
+              <div className="combat-fled-text">You managed to escape.</div>
             )}
             <button className="combat-btn btn-continue" onClick={onEnd}>
-              <span className="btn-label">Continuer</span>
+              <span className="btn-label">Continue</span>
             </button>
           </div>
         )}
@@ -150,13 +150,13 @@ export default function CombatScene({
       <div className="combat-keys">
         {phase === "choose" && (
           <>
-            <span><b>[1]</b> Attaquer</span>
-            <span><b>[2]</b> Défendre</span>
+            <span><b>[1]</b> Attack</span>
+            <span><b>[2]</b> Defend</span>
             <span><b>[3]</b> Potion</span>
-            <span><b>[4]</b> Fuir</span>
+            <span><b>[4]</b> Flee</span>
           </>
         )}
-        {isEnded && <span><b>[E]</b> Continuer</span>}
+        {isEnded && <span><b>[E]</b> Continue</span>}
       </div>
     </div>
   );

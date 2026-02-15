@@ -5,7 +5,7 @@ export default function HUD({ player, activeQuest }) {
       <div className="hud-stats">
         <div className="hud-stat">
           <div className="hud-dot" style={{ background: "#c0392b" }} />
-          <span className="hud-label">PV</span>
+          <span className="hud-label">HP</span>
           <span className="hud-value">{player.hp}/{player.maxHp}</span>
         </div>
         <div className="hud-stat">
@@ -20,12 +20,12 @@ export default function HUD({ player, activeQuest }) {
         </div>
         <div className="hud-stat">
           <div className="hud-dot" style={{ background: "#d4a856" }} />
-          <span className="hud-label">Or</span>
+          <span className="hud-label">Gold</span>
           <span className="hud-value">{player.gold}</span>
         </div>
         <div className="hud-stat">
           <div className="hud-dot" style={{ background: "#6a9f4a" }} />
-          <span className="hud-label">Niv</span>
+          <span className="hud-label">Lvl</span>
           <span className="hud-value">{player.level}</span>
         </div>
       </div>
@@ -40,8 +40,8 @@ export default function HUD({ player, activeQuest }) {
 
       {/* Controls */}
       <div className="hud-controls">
-        <span><b>ZQSD</b> déplacer</span>
-        <span><b>E</b> interagir</span>
+        <span><b>WASD</b> move</span>
+        <span><b>E</b> interact</span>
       </div>
     </div>
   );

@@ -31,7 +31,7 @@ export default function useCombat() {
     setTurnNumber(1);
     setCombatLog([{
       type: "system",
-      text: `${monsterData.name} apparaît ! ${monsterData.description || ""}`,
+      text: `${monsterData.name} appears! ${monsterData.description || ""}`,
     }]);
     setLastNarration(null);
     setLoot(null);
@@ -86,9 +86,9 @@ export default function useCombat() {
     setMonsterHp(newMonsterHp);
 
     // ─── AI NARRATION (async, non-blocking for gameplay) ───
-    const actionLabel = action === "attack" ? "Attaque"
-      : action === "defend" ? "Défense"
-      : fled ? "Fuite réussie" : "Tentative de fuite échouée";
+    const actionLabel = action === "attack" ? "Attack"
+      : action === "defend" ? "Defend"
+      : fled ? "Successful escape" : "Failed escape attempt";
 
     let narration;
     try {
@@ -106,8 +106,8 @@ export default function useCombat() {
       );
     } catch {
       narration = {
-        player_action_text: action === "attack" ? "Tu frappes la créature." : action === "defend" ? "Tu lèves ta garde." : "Tu tentes de fuir.",
-        monster_action_text: monsterDmg > 0 ? "La créature riposte." : "La créature hésite.",
+        player_action_text: action === "attack" ? "You strike the creature." : action === "defend" ? "You raise your guard." : "You attempt to flee.",
+        monster_action_text: monsterDmg > 0 ? "The creature retaliates." : "The creature hesitates.",
         ambient_text: null,
       };
     }
@@ -121,12 +121,12 @@ export default function useCombat() {
       newEntries.push({
         type: "player",
         text: narration.player_action_text,
-        damage: playerDmg > 0 ? `-${playerDmg} PV` : null,
+        damage: playerDmg > 0 ? `-${playerDmg} HP` : null,
       });
     }
 
     if (fled) {
-      newEntries.push({ type: "system", text: "Tu parviens à t'enfuir !" });
+      newEntries.push({ type: "system", text: "You manage to escape!" });
       setCombatLog((prev) => [...prev, ...newEntries]);
       setPhase("fled");
       isProcessing.current = false;
@@ -136,7 +136,7 @@ export default function useCombat() {
     if (newMonsterHp <= 0) {
       newEntries.push({
         type: "system",
-        text: `${monster.name} s'effondre ! Victoire !`,
+        text: `${monster.name} collapses! Victory!`,
       });
       const monsterLoot = { gold: monster.gold || 5, xp: monster.xp || 10 };
       setLoot(monsterLoot);
@@ -150,7 +150,7 @@ export default function useCombat() {
       newEntries.push({
         type: "monster",
         text: narration.monster_action_text,
-        damage: `-${monsterDmg} PV`,
+        damage: `-${monsterDmg} HP`,
       });
     } else if (narration.monster_action_text) {
       newEntries.push({ type: "monster", text: narration.monster_action_text });
@@ -161,7 +161,7 @@ export default function useCombat() {
     }
 
     if (newPlayerHp <= 0) {
-      newEntries.push({ type: "system", text: "Tu t'effondres... Défaite." });
+      newEntries.push({ type: "system", text: "You collapse... Defeat." });
       setCombatLog((prev) => [...prev, ...newEntries]);
       setPhase("defeat");
       isProcessing.current = false;

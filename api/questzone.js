@@ -1,51 +1,51 @@
 const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
 
 const BIOMES = {
-  brumesombre: { name: "Forêt de Brumesombre", floor: "herbe", walls: "arbres", obstacle: "buissons épais" },
-  ruines_nord: { name: "Ruines du Nord", floor: "dalles fissurées", walls: "murs effondrés", obstacle: "gravats" },
-  mine: { name: "Mine abandonnée", floor: "roche", walls: "parois rocheuses", obstacle: "éboulis" },
-  marais: { name: "Marais de Valtorve", floor: "terre boueuse", walls: "eau profonde", obstacle: "roseaux" },
-  route_commerce: { name: "Route commerciale", floor: "chemin de terre", walls: "rochers", obstacle: "chariots brisés" },
-  village_est: { name: "Village de l'Est", floor: "pavés", walls: "bâtiments", obstacle: "étals renversés" },
+  brumesombre: { name: "Brumesombre Forest", floor: "grass", walls: "trees", obstacle: "thick bushes" },
+  ruines_nord: { name: "Northern Ruins", floor: "cracked tiles", walls: "collapsed walls", obstacle: "rubble" },
+  mine: { name: "Abandoned Mine", floor: "rock", walls: "rock walls", obstacle: "cave-ins" },
+  marais: { name: "Valtorve Marshes", floor: "muddy ground", walls: "deep water", obstacle: "reeds" },
+  route_commerce: { name: "Trade Road", floor: "dirt path", walls: "boulders", obstacle: "broken carts" },
+  village_est: { name: "Eastern Village", floor: "cobblestone", walls: "buildings", obstacle: "overturned stalls" },
 };
 
 function buildPrompt(quest) {
   const biome = BIOMES[quest.location] || BIOMES.brumesombre;
 
-  return `Tu es un level designer de RPG. Tu génères des zones d'exploration pour un jeu tile-based.
+  return `You are an RPG level designer. You generate exploration zones for a tile-based game.
 
-## CONTEXTE
-Quête : "${quest.title}"
+## CONTEXT
+Quest: "${quest.title}"
 ${quest.description}
-Lieu : ${biome.name}
-Type : ${quest.type}
-Difficulté : ${quest.difficulty}/5
+Location: ${biome.name}
+Type: ${quest.type}
+Difficulty: ${quest.difficulty}/5
 
-## RÈGLES DE LA GRILLE
-- La grille fait exactement 14 colonnes × 10 lignes
-- Codes tiles : 0 = sol (${biome.floor}), 1 = mur/infranchissable (${biome.walls}), 2 = obstacle décoratif (${biome.obstacle}), 3 = entrée (1 seule, en bas), 4 = objectif (1 seul)
-- Le contour (première/dernière ligne et colonne) DOIT être des murs (1), sauf l'entrée (3) en bas
-- L'entrée (3) est au milieu de la dernière ligne
-- L'objectif (4) est dans la moitié haute de la carte
-- Laisse des chemins praticables entre l'entrée et l'objectif
-- Place quelques obstacles (2) pour créer un parcours intéressant, pas un couloir vide
-- Le sol (0) doit être la majorité des tiles intérieures
+## GRID RULES
+- The grid is exactly 14 columns × 10 rows
+- Tile codes: 0 = floor (${biome.floor}), 1 = wall/impassable (${biome.walls}), 2 = decorative obstacle (${biome.obstacle}), 3 = entry (only 1, at bottom), 4 = objective (only 1)
+- The border (first/last row and column) MUST be walls (1), except the entry (3) at the bottom
+- The entry (3) is in the middle of the last row
+- The objective (4) is in the upper half of the map
+- Leave walkable paths between the entry and the objective
+- Place some obstacles (2) to create an interesting layout, not an empty corridor
+- Floor (0) should be the majority of interior tiles
 
-## MONSTRES
-- Génère TOUJOURS entre 2 et 3 monstres, quel que soit le type de quête
-- Chaque monstre a une position (x, y) sur une case de sol (0)
-- Les monstres ne doivent PAS être sur l'entrée, l'objectif, ou un mur
-- Nomme-les de façon originale (pas de "loup géant" ou "squelette" générique)
+## MONSTERS
+- ALWAYS generate between 2 and 3 monsters, regardless of quest type
+- Each monster has a position (x, y) on a floor tile (0)
+- Monsters must NOT be on the entry, objective, or a wall
+- Give them original names (no generic "giant wolf" or "skeleton")
 
-## FORMAT (JSON strict, rien d'autre)
+## FORMAT (strict JSON, nothing else)
 {
   "grid": [
     [1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-    ...10 lignes de 14 colonnes...
+    ...10 rows of 14 columns...
   ],
   "monsters": [
     {
-      "name": "Nom unique",
+      "name": "Unique name",
       "x": 5,
       "y": 4,
       "hp": 30,
@@ -53,10 +53,10 @@ Difficulté : ${quest.difficulty}/5
       "def": 2,
       "xp": 12,
       "gold": 8,
-      "description": "courte description (1 phrase)"
+      "description": "short description (1 sentence)"
     }
   ],
-  "ambiance": "1 phrase décrivant l'atmosphère du lieu"
+  "ambiance": "1 sentence describing the atmosphere of the location"
 }`;
 }
 
@@ -152,7 +152,7 @@ export default async function handler(req, res) {
         max_tokens: 1200,
         temperature: 0.85,
         system: buildPrompt(quest),
-        messages: [{ role: "user", content: "Génère la zone d'exploration." }],
+        messages: [{ role: "user", content: "Generate the exploration zone." }],
       }),
     });
 
@@ -183,12 +183,12 @@ export default async function handler(req, res) {
             const existing = (zone.monsters || []).some((m) => m.x === x && m.y === y);
             if (!existing) {
               fallbackMonsters.push({
-                name: fallbackMonsters.length === 0 ? "Rôdeur des ombres" : "Charognard",
+                name: fallbackMonsters.length === 0 ? "Shadow Prowler" : "Scavenger",
                 x, y, hp: 25 + Math.floor(Math.random() * 15),
                 atk: 4 + Math.floor(Math.random() * 3),
                 def: 1 + Math.floor(Math.random() * 2),
                 xp: 10, gold: 8,
-                description: "Une créature hostile rôde dans la zone.",
+                description: "A hostile creature lurks in the area.",
               });
             }
           }

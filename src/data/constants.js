@@ -31,9 +31,10 @@ export const KEY_MAP = {
   ArrowDown: "down",
   ArrowLeft: "left",
   ArrowRight: "right",
-  z: "up",
   w: "up",
+  z: "up",
   s: "down",
+  a: "left",
   q: "left",
   d: "right",
 };
@@ -49,7 +50,7 @@ export const SCENE = {
 
 // ─── PLAYER DEFAULTS ───
 export const DEFAULT_PLAYER = {
-  name: "Mercenaire",
+  name: "Mercenary",
   hp: 100,
   maxHp: 100,
   atk: 5,
