@@ -43,9 +43,8 @@ export default function App() {
   // ─── DERIVED: is the objective reachable? ───
   const objectiveUnlocked = (() => {
     if (!activeQuest) return false;
-    // Extermination: must kill all monsters
-    if (activeQuest.type === "extermination") return zoneMonsters.length === 0;
-    // Other types: always unlocked
+    // Any quest with monsters: must kill them all
+    if (zoneMonsters.length > 0) return false;
     return true;
   })();
 
@@ -233,12 +232,9 @@ export default function App() {
 
   const interactObjective = useCallback(() => {
     if (!objectiveUnlocked) {
-      const hint = activeQuest?.type === "extermination"
-        ? "Élimine toutes les créatures de la zone avant de compléter l'objectif."
-        : "L'objectif n'est pas encore accessible.";
       dialogue.open([{
         type: "text", speaker: "— Objectif —", speakerColor: "#8b7355",
-        text: `🔒 ${hint} (${zoneMonsters.length} monstre${zoneMonsters.length > 1 ? "s" : ""} restant${zoneMonsters.length > 1 ? "s" : ""})`,
+        text: `🔒 Élimine toutes les créatures de la zone avant de compléter l'objectif. (${zoneMonsters.length} restant${zoneMonsters.length > 1 ? "s" : ""})`,
       }]);
       return;
     }
