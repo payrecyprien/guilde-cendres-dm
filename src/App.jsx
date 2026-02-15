@@ -1,14 +1,15 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import {
-  TILE_SIZE, WALKABLE, DIRECTIONS, SCENE, DEFAULT_PLAYER, T,
+  TILE_SIZE, WALKABLE, DIRECTIONS, KEY_MAP, INTERACT_KEYS,
+  SCENE, DEFAULT_PLAYER, T,
 } from "./data/constants";
 import { GUILD_MAP, GUILD_START, NPCS } from "./data/guild";
 import { ZT, ZONE_WALKABLE, getBiomeStyle } from "./data/zones";
 import { QUEST_SYSTEM_PROMPT, buildQuestUserMessage, ARMORER_ITEMS } from "./data/prompts";
 import { generateQuest, generateQuestZone } from "./utils/api";
 import useDialogue from "./hooks/useDialogue";
-import useMovement from "./hooks/useMovement";
 import useCombat from "./hooks/useCombat";
+import useKeyboard from "./hooks/useKeyboard";
 import GuildScene from "./scenes/GuildScene";
 import QuestScene from "./scenes/QuestScene";
 import CombatScene from "./scenes/CombatScene";
@@ -22,19 +23,19 @@ const ZONE_W = 14;
 const ZONE_H = 10;
 
 export default function App() {
-  // ─── GLOBAL GAME STATE ───
+  // ─── ALL STATE IN COMPONENT ───
   const [scene, setScene] = useState(SCENE.GUILD);
   const [player, setPlayer] = useState({ ...DEFAULT_PLAYER });
+  const [playerPos, setPlayerPos] = useState({ ...GUILD_START });
+  const [facing, setFacing] = useState("up");
   const [activeQuest, setActiveQuest] = useState(null);
   const [questHistory, setQuestHistory] = useState([]);
   const [pendingQuest, setPendingQuest] = useState(null);
 
-  // ─── QUEST ZONE STATE ───
   const [zoneData, setZoneData] = useState(null);
   const [zoneMonsters, setZoneMonsters] = useState([]);
   const [zoneBiome, setZoneBiome] = useState(null);
 
-  // ─── HIGHLIGHT STATE ───
   const [highlightedNPC, setHighlightedNPC] = useState(null);
   const [highlightedMonster, setHighlightedMonster] = useState(null);
   const [showHint, setShowHint] = useState(null);
@@ -43,19 +44,15 @@ export default function App() {
   const isGenerating = useRef(false);
   const combatTargetRef = useRef(null);
 
-  // ─── DERIVED: is the objective reachable? ───
-  const objectiveUnlocked = (() => {
-    if (!activeQuest) return false;
-    if (zoneMonsters.length > 0) return false;
-    return true;
-  })();
+  // ─── DERIVED ───
+  const objectiveUnlocked = !!activeQuest && zoneMonsters.length === 0;
 
-  // ─── HOOKS ───
+  // ─── HOOKS (isolated, no cross-deps) ───
   const dialogue = useDialogue();
   const combat = useCombat();
-  const movement = useMovement({ initialPos: { ...GUILD_START }, initialFacing: "up" });
+  const keyboardRef = useKeyboard();
 
-  // Helpers
+  // ─── HELPERS ───
   const getNPCAt = useCallback(
     (x, y) => scene === SCENE.GUILD ? NPCS.find((n) => n.x === x && n.y === y) : null,
     [scene]
@@ -69,18 +66,18 @@ export default function App() {
   const isWalkable = useCallback((x, y) => {
     if (scene === SCENE.GUILD) {
       const tile = GUILD_MAP[y]?.[x];
-      return tile !== undefined && WALKABLE.has(tile) && !getNPCAt(x, y);
+      return tile !== undefined && WALKABLE.has(tile) && !NPCS.find((n) => n.x === x && n.y === y);
     } else if (zoneData) {
       const tile = zoneData.grid[y]?.[x];
-      return tile !== undefined && ZONE_WALKABLE.has(tile) && !getMonsterAt(x, y);
+      return tile !== undefined && ZONE_WALKABLE.has(tile) && !zoneMonsters.find((m) => m.x === x && m.y === y);
     }
     return false;
-  }, [scene, zoneData, getNPCAt, getMonsterAt]);
+  }, [scene, zoneData, zoneMonsters]);
 
-  const getFacingTile = useCallback((pPos, dir) => {
+  const getFacingTile = (pos, dir) => {
     const [dx, dy] = DIRECTIONS[dir];
-    return { x: pPos.x + dx, y: pPos.y + dy };
-  }, []);
+    return { x: pos.x + dx, y: pos.y + dy };
+  };
 
   // ═══════════════════════════════════════════
   // GUILD INTERACTIONS
@@ -181,7 +178,6 @@ export default function App() {
       setZoneMonsters(zone.monsters || []);
       setZoneBiome(biome);
 
-      // Find entry position (1 tile above entry tile)
       let entryPos = { x: 6, y: 8 };
       for (let y = 0; y < zone.grid.length; y++) {
         for (let x = 0; x < zone.grid[y].length; x++) {
@@ -192,7 +188,8 @@ export default function App() {
         entryPos = { x: 6, y: 8 };
       }
 
-      movement.resetPosition(entryPos, "up");
+      setPlayerPos(entryPos);
+      setFacing("up");
       setScene(SCENE.QUEST);
       dialogue.close();
 
@@ -235,7 +232,7 @@ export default function App() {
   }, [dialogue]);
 
   const interactObjective = useCallback(() => {
-    if (!objectiveUnlocked) {
+    if (zoneMonsters.length > 0) {
       dialogue.open([{
         type: "text", speaker: "— Objectif —", speakerColor: "#8b7355",
         text: `🔒 Élimine toutes les créatures de la zone avant de compléter l'objectif. (${zoneMonsters.length} restant${zoneMonsters.length > 1 ? "s" : ""})`,
@@ -255,13 +252,29 @@ export default function App() {
         ],
       },
     ]);
-  }, [activeQuest, objectiveUnlocked, zoneMonsters.length, dialogue]);
+  }, [activeQuest, zoneMonsters.length, dialogue]);
 
   const encounterMonster = useCallback((monster) => {
     combatTargetRef.current = monster;
     combat.startCombat(monster, zoneBiome?.name);
     setScene(SCENE.COMBAT);
   }, [combat, zoneBiome]);
+
+  // ═══════════════════════════════════════════
+  // SCENE TRANSITIONS
+  // ═══════════════════════════════════════════
+
+  const returnToGuild = useCallback((healPlayer = false) => {
+    setScene(SCENE.GUILD);
+    setPlayerPos({ ...GUILD_START });
+    setFacing("up");
+    setZoneData(null);
+    setZoneMonsters([]);
+    dialogue.close();
+    if (healPlayer) {
+      setPlayer((prev) => ({ ...prev, hp: Math.max(20, Math.floor(prev.maxHp / 2)) }));
+    }
+  }, [dialogue]);
 
   // ═══════════════════════════════════════════
   // COMBAT HANDLERS
@@ -272,10 +285,8 @@ export default function App() {
 
     if (action === "potion") {
       if (player.hp >= player.maxHp) return;
-      // Heal 30 HP before combat resolution
       effectivePlayer.hp = Math.min(player.maxHp, player.hp + 30);
       setPlayer((prev) => ({ ...prev, hp: Math.min(prev.maxHp, prev.hp + 30) }));
-      // Treated as defend (monster still attacks but reduced damage)
       const result = await combat.executeAction("defend", effectivePlayer, zoneBiome?.name);
       if (result) {
         setPlayer((prev) => ({ ...prev, hp: result.newPlayerHp }));
@@ -293,9 +304,7 @@ export default function App() {
     const target = combatTargetRef.current;
 
     if (combat.phase === "victory" && target) {
-      // Remove monster from zone
       setZoneMonsters((prev) => prev.filter((m) => !(m.x === target.x && m.y === target.y)));
-      // Give loot
       if (combat.loot) {
         setPlayer((prev) => ({
           ...prev,
@@ -314,76 +323,11 @@ export default function App() {
     combatTargetRef.current = null;
   }, [combat.phase, combat.loot, returnToGuild]);
 
-  // ─── COMBAT KEYBOARD ───
-  useEffect(() => {
-    if (scene !== SCENE.COMBAT) return;
-
-    const handler = (e) => {
-      if (combat.phase === "choose") {
-        if (e.key === "1") handleCombatAction("attack");
-        else if (e.key === "2") handleCombatAction("defend");
-        else if (e.key === "3") handleCombatAction("potion");
-        else if (e.key === "4") handleCombatAction("flee");
-      }
-      if ((combat.phase === "victory" || combat.phase === "defeat" || combat.phase === "fled") &&
-          (e.key === "e" || e.key === " " || e.key === "Enter")) {
-        e.preventDefault();
-        handleCombatEnd();
-      }
-    };
-
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [scene, combat.phase, handleCombatAction, handleCombatEnd]);
-
-  // ═══════════════════════════════════════════
-  // INTERACTION ROUTER
-  // ═══════════════════════════════════════════
-
-  const handleInteract = useCallback(() => {
-    const target = getFacingTile(movement.pos, movement.facing);
-
-    if (scene === SCENE.GUILD) {
-      const npc = getNPCAt(target.x, target.y);
-      if (npc?.type === "quest") return talkToVarek();
-      if (npc?.type === "armor") return talkToArmorer();
-      const tile = GUILD_MAP[target.y]?.[target.x];
-      if (tile === T.DOOR) return interactDoor();
-      if (tile === T.CHEST) return interactChest();
-    }
-
-    if (scene === SCENE.QUEST && zoneData) {
-      const monster = getMonsterAt(target.x, target.y);
-      if (monster) return encounterMonster(monster);
-      const tile = zoneData.grid[target.y]?.[target.x];
-      if (tile === ZT.ENTRY) return interactZoneEntry();
-      if (tile === ZT.OBJECTIVE) return interactObjective();
-    }
-  }, [scene, zoneData, getFacingTile, getNPCAt, getMonsterAt,
-    talkToVarek, talkToArmorer, interactDoor, interactChest,
-    encounterMonster, interactZoneEntry, interactObjective]);
-
-  // ═══════════════════════════════════════════
-  // SCENE TRANSITIONS
-  // ═══════════════════════════════════════════
-
-  const returnToGuild = useCallback((healPlayer = false) => {
-    setScene(SCENE.GUILD);
-    movement.resetPosition({ ...GUILD_START }, "up");
-    setZoneData(null);
-    setZoneMonsters([]);
-    dialogue.close();
-    if (healPlayer) {
-      setPlayer((prev) => ({ ...prev, hp: Math.max(20, Math.floor(prev.maxHp / 2)) }));
-    }
-  }, [dialogue]);
-
   // ═══════════════════════════════════════════
   // CHOICE HANDLER
   // ═══════════════════════════════════════════
 
   const handleChoice = useCallback((action) => {
-    // ─── Quest accept/decline ───
     if (action === "accept_quest" && pendingQuest) {
       setActiveQuest(pendingQuest);
       setPendingQuest(null);
@@ -400,7 +344,6 @@ export default function App() {
       return;
     }
 
-    // ─── Shop ───
     if (action.startsWith("buy_")) {
       const itemId = action.replace("buy_", "");
       const item = ARMORER_ITEMS.find((i) => i.id === itemId);
@@ -428,7 +371,6 @@ export default function App() {
       return;
     }
 
-    // ─── Return / Complete ───
     if (action === "return_guild") {
       returnToGuild();
       return;
@@ -465,35 +407,101 @@ export default function App() {
       return;
     }
 
-    // ─── Generic close ───
     if (action === "leave_shop" || action === "cancel") {
       dialogue.close();
     }
   }, [pendingQuest, player, activeQuest, zoneMonsters, dialogue, returnToGuild]);
 
-  // ─── SYNC MOVEMENT CALLBACKS (ref-based, no circular deps) ───
-  movement.updateCallbacks({
-    isWalkable,
-    onInteract: handleInteract,
-    dialogueOpen: dialogue.isOpen,
-    onDialogueAdvance: dialogue.advance,
-    onDialogueClose: dialogue.close,
-    dialogueStep: dialogue.currentStep,
-    onChoice: handleChoice,
-    disabled: scene === SCENE.COMBAT,
-  });
+  // ═══════════════════════════════════════════
+  // KEYBOARD — single ref, reads all state via closure
+  // ═══════════════════════════════════════════
+
+  // This runs every render, updating the ref with latest closure
+  keyboardRef.current = (e) => {
+    // ─── COMBAT KEYS ───
+    if (scene === SCENE.COMBAT) {
+      if (combat.phase === "choose") {
+        if (e.key === "1") handleCombatAction("attack");
+        else if (e.key === "2") handleCombatAction("defend");
+        else if (e.key === "3") handleCombatAction("potion");
+        else if (e.key === "4") handleCombatAction("flee");
+      }
+      if ((combat.phase === "victory" || combat.phase === "defeat" || combat.phase === "fled") &&
+          (e.key === "e" || e.key === " " || e.key === "Enter")) {
+        e.preventDefault();
+        handleCombatEnd();
+      }
+      return;
+    }
+
+    // ─── DIALOGUE KEYS ───
+    if (dialogue.isOpen) {
+      if (INTERACT_KEYS.has(e.key)) {
+        e.preventDefault();
+        dialogue.advance();
+      }
+      if (e.key === "Escape" && dialogue.currentStep?.type !== "loading") {
+        dialogue.close();
+      }
+      if (dialogue.currentStep?.type === "choice" && dialogue.currentStep.choices) {
+        const num = parseInt(e.key);
+        if (num >= 1 && num <= dialogue.currentStep.choices.length) {
+          e.preventDefault();
+          handleChoice(dialogue.currentStep.choices[num - 1].action);
+        }
+      }
+      return;
+    }
+
+    // ─── MOVEMENT KEYS ───
+    const dir = KEY_MAP[e.key];
+    if (dir) {
+      e.preventDefault();
+      setFacing(dir);
+      const [dx, dy] = DIRECTIONS[dir];
+      setPlayerPos((prev) => {
+        const nx = prev.x + dx;
+        const ny = prev.y + dy;
+        return isWalkable(nx, ny) ? { x: nx, y: ny } : prev;
+      });
+    }
+
+    // ─── INTERACT KEY ───
+    if (INTERACT_KEYS.has(e.key)) {
+      e.preventDefault();
+
+      const target = getFacingTile(playerPos, facing);
+
+      if (scene === SCENE.GUILD) {
+        const npc = getNPCAt(target.x, target.y);
+        if (npc?.type === "quest") return talkToVarek();
+        if (npc?.type === "armor") return talkToArmorer();
+        const tile = GUILD_MAP[target.y]?.[target.x];
+        if (tile === T.DOOR) return interactDoor();
+        if (tile === T.CHEST) return interactChest();
+      }
+
+      if (scene === SCENE.QUEST && zoneData) {
+        const monster = getMonsterAt(target.x, target.y);
+        if (monster) return encounterMonster(monster);
+        const tile = zoneData.grid[target.y]?.[target.x];
+        if (tile === ZT.ENTRY) return interactZoneEntry();
+        if (tile === ZT.OBJECTIVE) return interactObjective();
+      }
+    }
+  };
 
   // ─── AUTO-INTERACT: step on objective/entry ───
   useEffect(() => {
     if (scene !== SCENE.QUEST || !zoneData || dialogue.isOpen) return;
-    const tile = zoneData.grid[movement.pos.y]?.[movement.pos.x];
+    const tile = zoneData.grid[playerPos.y]?.[playerPos.x];
     if (tile === ZT.OBJECTIVE) interactObjective();
     else if (tile === ZT.ENTRY) interactZoneEntry();
-  }, [scene, movement.pos, zoneData, dialogue.isOpen, interactObjective, interactZoneEntry]);
+  }, [scene, playerPos, zoneData, dialogue.isOpen, interactObjective, interactZoneEntry]);
 
   // ─── HINTS ───
   useEffect(() => {
-    const target = getFacingTile(movement.pos, movement.facing);
+    const target = getFacingTile(playerPos, facing);
 
     if (scene === SCENE.GUILD) {
       const npc = getNPCAt(target.x, target.y);
@@ -511,15 +519,15 @@ export default function App() {
       setHighlightedMonster(monster || null);
       if (monster) setShowHint(`⚔ ${monster.name}`);
       else if (tile === ZT.ENTRY) setShowHint("🚪 Retour");
-      else if (tile === ZT.OBJECTIVE) setShowHint(objectiveUnlocked ? "⭐ Objectif" : `🔒 Objectif (${zoneMonsters.length} restants)`);
+      else if (tile === ZT.OBJECTIVE) setShowHint(zoneMonsters.length === 0 ? "⭐ Objectif" : `🔒 Objectif (${zoneMonsters.length} restants)`);
       else setShowHint(null);
     }
-  }, [scene, movement.pos, movement.facing, activeQuest, zoneData, objectiveUnlocked, zoneMonsters.length, getFacingTile, getNPCAt, getMonsterAt]);
+  }, [scene, playerPos, facing, activeQuest, zoneData, zoneMonsters.length, getNPCAt, getMonsterAt]);
 
   // Auto-focus
   useEffect(() => { gameRef.current?.focus(); }, []);
 
-  // ─── DERIVED ───
+  // ─── LAYOUT ───
   const mapW = (scene === SCENE.GUILD ? GUILD_W : ZONE_W) * TILE_SIZE;
   const mapH = (scene === SCENE.GUILD ? GUILD_H : ZONE_H) * TILE_SIZE;
 
@@ -544,7 +552,6 @@ export default function App() {
         </div>
       </div>
 
-      {/* COMBAT SCENE — full replacement */}
       {scene === SCENE.COMBAT ? (
         <CombatScene
           combat={combat}
@@ -554,7 +561,6 @@ export default function App() {
           zoneBiome={zoneBiome}
         />
       ) : (
-        /* EXPLORATION SCENES (guild + quest) */
         <div className="game-viewport" style={{ width: mapW, height: mapH }}>
           {scene === SCENE.GUILD && <GuildScene highlightedNPC={highlightedNPC} />}
           {scene === SCENE.QUEST && (
@@ -563,17 +569,17 @@ export default function App() {
               zoneBiome={zoneBiome}
               monsters={zoneMonsters}
               highlightedMonster={highlightedMonster}
-              playerPos={movement.pos}
+              playerPos={playerPos}
               objectiveUnlocked={objectiveUnlocked}
             />
           )}
 
-          <PlayerSprite pos={movement.pos} facing={movement.facing} />
+          <PlayerSprite pos={playerPos} facing={facing} />
 
           {showHint && !dialogue.isOpen && (
             <div className="interact-hint" style={{
-              left: movement.pos.x * TILE_SIZE + TILE_SIZE / 2,
-              top: movement.pos.y * TILE_SIZE - 20,
+              left: playerPos.x * TILE_SIZE + TILE_SIZE / 2,
+              top: playerPos.y * TILE_SIZE - 20,
             }}>
               [E] {showHint}
             </div>
