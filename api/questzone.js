@@ -9,8 +9,32 @@ const BIOMES = {
   east_village: { name: "Eastern Village", floor: "cobblestone", walls: "buildings", obstacle: "overturned stalls" },
 };
 
+function getZoneSize(difficulty) {
+  const sizes = {
+    1: { w: 14, h: 10, monsters: "2 to 3" },
+    2: { w: 16, h: 11, monsters: "2 to 3" },
+    3: { w: 18, h: 12, monsters: "3 to 4" },
+    4: { w: 20, h: 14, monsters: "3 to 4" },
+    5: { w: 22, h: 14, monsters: "4 to 5" },
+  };
+  return sizes[difficulty] || sizes[1];
+}
+
+const SHAPE_POOL = [
+  "L-shaped: a corridor turns 90 degrees, with rooms at each end",
+  "T-shaped: a main corridor with a branch splitting off to one side",
+  "U-shaped: two parallel paths connected at one end, open at the other",
+  "Winding cave: an organic, snaking path with irregular walls and alcoves",
+  "Two rooms connected by a narrow corridor",
+  "Central chamber with 2-3 branching tunnels radiating outward",
+  "Zigzag path: the route snakes back and forth across the grid",
+  "Ring: a circular or oval loop path around a central wall cluster",
+];
+
 function buildPrompt(quest) {
   const biome = BIOMES[quest.location] || BIOMES.gloomhaze;
+  const size = getZoneSize(quest.difficulty || 1);
+  const shape = SHAPE_POOL[Math.floor(Math.random() * SHAPE_POOL.length)];
 
   return `You are an RPG level designer. You generate exploration zones for a tile-based game.
 
@@ -21,21 +45,26 @@ Location: ${biome.name}
 Type: ${quest.type}
 Difficulty: ${quest.difficulty}/5
 
+## SHAPE
+The zone must have a NON-RECTANGULAR layout. The overall shape must be: ${shape}.
+Use walls (1) as void/rock to carve out this shape within the grid. The playable floor area should clearly follow the described shape. Do NOT make a boring rectangle with walls only on the border.
+
 ## GRID RULES
-- The grid is exactly 14 columns × 10 rows
-- Tile codes: 0 = floor (${biome.floor}), 1 = wall/impassable (${biome.walls}), 2 = decorative obstacle (${biome.obstacle}), 3 = entry (only 1, at bottom), 4 = objective (only 1)
-- The border (first/last row and column) MUST be walls (1), except the entry (3) at the bottom
-- The entry (3) is in the middle of the last row
-- The objective (4) is in the upper half of the map
-- Leave walkable paths between the entry and the objective
-- Place some obstacles (2) to create an interesting layout, not an empty corridor
-- Floor (0) should be the majority of interior tiles
+- The grid is exactly ${size.w} columns × ${size.h} rows
+- Tile codes: 0 = floor (${biome.floor}), 1 = wall/impassable (${biome.walls}), 2 = decorative obstacle (${biome.obstacle}), 3 = entry (only 1), 4 = objective (only 1)
+- The outer border of the grid is always walls (1), except the entry tile (3)
+- The entry (3) must be on the bottom row, accessible from the playable area
+- The objective (4) must be far from the entry, placed at the end of the shape
+- There MUST be a walkable path from entry to objective
+- Scatter obstacles (2) within floor areas for visual interest
+- Floor tiles (0) should form the shape described above, not fill the whole interior
 
 ## MONSTERS
-- ALWAYS generate between 2 and 3 monsters, regardless of quest type
+- Generate between ${size.monsters} monsters
 - Each monster has a position (x, y) on a floor tile (0)
 - Monsters must NOT be on the entry, objective, or a wall
 - Give them original names (no generic "giant wolf" or "skeleton")
+- Scale monster stats to difficulty: higher difficulty = tougher monsters
 
 ## WRITING STYLE for text fields
 - NEVER use em-dashes, semicolons, or ellipsis
@@ -45,8 +74,8 @@ Difficulty: ${quest.difficulty}/5
 ## FORMAT (strict JSON, nothing else)
 {
   "grid": [
-    [1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-    ...10 rows of 14 columns...
+    [${Array(size.w).fill(1).join(",")}],
+    ...${size.h} rows of ${size.w} columns...
   ],
   "monsters": [
     {
@@ -154,7 +183,7 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         model: "claude-sonnet-4-5-20250929",
-        max_tokens: 1200,
+        max_tokens: 2000,
         temperature: clientTemp ?? 0.85,
         system: buildPrompt(quest),
         messages: [{ role: "user", content: "Generate the exploration zone." }],

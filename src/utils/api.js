@@ -66,7 +66,7 @@ export async function generateQuestZone(quest) {
     endpoint: "Zone Generation",
     model: "claude-sonnet-4-5",
     systemPrompt: "(server-side prompt with biome context)",
-    userMessage: `Quest: "${quest.title}" | Location: ${quest.location} | Difficulty: ${quest.difficulty}`,
+    userMessage: `Quest: "${quest.title}" | Location: ${quest.location} | Difficulty: ${quest.difficulty} | Size scales with difficulty`,
   });
 
   try {

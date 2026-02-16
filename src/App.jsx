@@ -28,8 +28,10 @@ import HUD from "./components/HUD";
 
 const GUILD_W = GUILD_MAP[0].length;
 const GUILD_H = GUILD_MAP.length;
-const ZONE_W = 14;
-const ZONE_H = 10;
+
+// Viewport size (what the player sees) — fixed regardless of zone size
+const VIEWPORT_W = 14;
+const VIEWPORT_H = 10;
 
 export default function App() {
   // ─── ALL STATE IN COMPONENT ───
@@ -262,14 +264,16 @@ export default function App() {
       setZoneMonsters(zone.monsters || []);
       setZoneBiome(biome);
 
-      let entryPos = { x: 6, y: 8 };
-      for (let y = 0; y < zone.grid.length; y++) {
+      const gridH = zone.grid.length;
+      const gridW = zone.grid[0]?.length || 14;
+      let entryPos = { x: Math.floor(gridW / 2), y: gridH - 2 };
+      for (let y = 0; y < gridH; y++) {
         for (let x = 0; x < zone.grid[y].length; x++) {
           if (zone.grid[y][x] === 3) { entryPos = { x, y: y - 1 }; break; }
         }
       }
       if (!zone.grid[entryPos.y] || !ZONE_WALKABLE.has(zone.grid[entryPos.y][entryPos.x])) {
-        entryPos = { x: 6, y: 8 };
+        entryPos = { x: Math.floor(gridW / 2), y: gridH - 2 };
       }
 
       setPlayerPos(entryPos);
@@ -798,8 +802,19 @@ export default function App() {
   useEffect(() => { gameRef.current?.focus(); }, []);
 
   // ─── LAYOUT ───
-  const mapW = (scene === SCENE.GUILD ? GUILD_W : ZONE_W) * TILE_SIZE;
-  const mapH = (scene === SCENE.GUILD ? GUILD_H : ZONE_H) * TILE_SIZE;
+  const zoneW = zoneData?.grid?.[0]?.length || VIEWPORT_W;
+  const zoneH = zoneData?.grid?.length || VIEWPORT_H;
+
+  const mapW = (scene === SCENE.GUILD ? GUILD_W : VIEWPORT_W) * TILE_SIZE;
+  const mapH = (scene === SCENE.GUILD ? GUILD_H : VIEWPORT_H) * TILE_SIZE;
+
+  // Camera offset: center player in viewport, clamp to map edges
+  const cameraX = scene === SCENE.QUEST
+    ? Math.max(0, Math.min(playerPos.x * TILE_SIZE - (VIEWPORT_W / 2 - 0.5) * TILE_SIZE, (zoneW - VIEWPORT_W) * TILE_SIZE))
+    : 0;
+  const cameraY = scene === SCENE.QUEST
+    ? Math.max(0, Math.min(playerPos.y * TILE_SIZE - (VIEWPORT_H / 2 - 0.5) * TILE_SIZE, (zoneH - VIEWPORT_H) * TILE_SIZE))
+    : 0;
 
   // ─── RENDER ───
   return (
@@ -835,30 +850,42 @@ export default function App() {
               zoneBiome={zoneBiome}
             />
           ) : (
-            <div className="game-viewport" style={{ width: mapW, height: mapH }}>
-              {scene === SCENE.GUILD && <GuildScene highlightedNPC={highlightedNPC} />}
-              {scene === SCENE.QUEST && (
-                <QuestScene
-                  zoneData={zoneData}
-                  zoneBiome={zoneBiome}
-                  monsters={zoneMonsters}
-                  highlightedMonster={highlightedMonster}
-                  playerPos={playerPos}
-                  objectiveUnlocked={objectiveUnlocked}
-                  monsterPortraits={monsterPortraits}
-                />
-              )}
+            <div className="game-viewport" style={{ width: mapW, height: mapH, overflow: "hidden" }}>
+              <div
+                className="camera-container"
+                style={{
+                  width: scene === SCENE.QUEST ? zoneW * TILE_SIZE : mapW,
+                  height: scene === SCENE.QUEST ? zoneH * TILE_SIZE : mapH,
+                  transform: `translate(${-cameraX}px, ${-cameraY}px)`,
+                  transition: "transform 0.15s ease-out",
+                  position: "relative",
+                }}
+              >
+                {scene === SCENE.GUILD && <GuildScene highlightedNPC={highlightedNPC} />}
+                {scene === SCENE.QUEST && (
+                  <QuestScene
+                    zoneData={zoneData}
+                    zoneBiome={zoneBiome}
+                    monsters={zoneMonsters}
+                    highlightedMonster={highlightedMonster}
+                    playerPos={playerPos}
+                    objectiveUnlocked={objectiveUnlocked}
+                    monsterPortraits={monsterPortraits}
+                  />
+                )}
 
-              <PlayerSprite pos={playerPos} facing={facing} />
+                <PlayerSprite pos={playerPos} facing={facing} />
 
-              {showHint && !dialogue.isOpen && (
-                <div className="interact-hint" style={{
-                  left: playerPos.x * TILE_SIZE + TILE_SIZE / 2,
-                  top: playerPos.y * TILE_SIZE - 20,
-                }}>
-                  [E] {showHint}
-                </div>
-              )}
+                {showHint && !dialogue.isOpen && (
+                  <div className="interact-hint" style={{
+                    left: playerPos.x * TILE_SIZE + TILE_SIZE / 2,
+                    top: playerPos.y * TILE_SIZE - 20,
+                  }}>
+                    [E] {showHint}
+                  </div>
+                )}
+              </div>
+              {/* End camera container — UI overlays below are fixed to viewport */}
 
               {dialogue.isOpen && (
                 <DialogueBox

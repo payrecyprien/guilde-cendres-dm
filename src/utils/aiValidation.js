@@ -56,28 +56,31 @@ export function validateQuest(quest) {
 }
 
 /**
- * Validate a zone object
+ * Validate a zone object (variable grid sizes)
  */
 export function validateZone(zone) {
   const issues = [];
   const fixes = [];
 
-  if (!Array.isArray(zone.grid) || zone.grid.length !== 10) {
-    issues.push(`Grid has ${zone.grid?.length || 0} rows instead of 10`);
+  if (!Array.isArray(zone.grid) || zone.grid.length < 8) {
+    issues.push(`Grid has ${zone.grid?.length || 0} rows (minimum 8)`);
   } else {
-    // Check row widths
+    const expectedW = zone.grid[0]?.length || 14;
+
+    // Check row widths consistency
     zone.grid.forEach((row, i) => {
-      if (row.length !== 14) {
-        issues.push(`Row ${i} has ${row.length} cols instead of 14`);
+      if (row.length !== expectedW) {
+        issues.push(`Row ${i} has ${row.length} cols, expected ${expectedW}`);
       }
     });
 
     // Check entry exists
-    const lastRow = zone.grid[9] || [];
+    const lastRow = zone.grid[zone.grid.length - 1] || [];
     const hasEntry = lastRow.includes(3);
     if (!hasEntry) {
-      fixes.push("Missing entry tile → injected at (6,9)");
-      if (zone.grid[9]) zone.grid[9][6] = 3;
+      const midX = Math.floor(expectedW / 2);
+      fixes.push(`Missing entry tile → injected at (${midX},${zone.grid.length - 1})`);
+      if (zone.grid[zone.grid.length - 1]) zone.grid[zone.grid.length - 1][midX] = 3;
     }
 
     // Check objective exists
@@ -86,8 +89,9 @@ export function validateZone(zone) {
       if (zone.grid[y].includes(4)) { hasObjective = true; break; }
     }
     if (!hasObjective) {
-      fixes.push("Missing objective tile → injected at (7,2)");
-      if (zone.grid[2]) zone.grid[2][7] = 4;
+      const objX = Math.floor(expectedW / 2) + 1;
+      fixes.push(`Missing objective tile → injected at (${objX},2)`);
+      if (zone.grid[2]) zone.grid[2][objX] = 4;
     }
   }
 
