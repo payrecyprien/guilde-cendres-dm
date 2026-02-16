@@ -314,9 +314,28 @@ export default function App() {
     if (player.ingredients.length > 0) {
       lines.push(`Materials: ${player.ingredients.map(id => `${INGREDIENTS[id]?.icon || "?"} ${INGREDIENTS[id]?.name || id}`).join(", ")}`);
     }
+    if ((player.potions || 0) > 0) {
+      lines.push(`Potions: ${player.potions}`);
+    }
     const text = lines.length > 0 ? lines.join(" · ") : "The chest is empty.";
-    dialogue.open([{ type: "text", speaker: "Chest", speakerColor: "#8b7355", text }]);
-  }, [player.inventory, player.craftedGear, player.ingredients, dialogue]);
+
+    // Offer to drink potion if hurt and has stock
+    if ((player.potions || 0) > 0 && player.hp < player.maxHp) {
+      dialogue.open([
+        { type: "text", speaker: "Chest", speakerColor: "#8b7355", text },
+        {
+          type: "choice", speaker: "Chest", speakerColor: "#8b7355",
+          text: `HP: ${player.hp}/${player.maxHp}`,
+          choices: [
+            { label: `🧪 Drink Potion (+30 HP) — ${player.potions} left`, action: "use_potion", style: "choice-accept" },
+            { label: "Close", action: "cancel", style: "choice-decline" },
+          ],
+        },
+      ]);
+    } else {
+      dialogue.open([{ type: "text", speaker: "Chest", speakerColor: "#8b7355", text }]);
+    }
+  }, [player.inventory, player.craftedGear, player.ingredients, player.potions, player.hp, player.maxHp, dialogue]);
 
   // ═══════════════════════════════════════════
   // QUEST ZONE INTERACTIONS
@@ -387,9 +406,14 @@ export default function App() {
     let effectivePlayer = { ...player };
 
     if (action === "potion") {
+      if ((player.potions || 0) <= 0) return;
       if (player.hp >= player.maxHp) return;
       effectivePlayer.hp = Math.min(player.maxHp, player.hp + 30);
-      setPlayer((prev) => ({ ...prev, hp: Math.min(prev.maxHp, prev.hp + 30) }));
+      setPlayer((prev) => ({
+        ...prev,
+        hp: Math.min(prev.maxHp, prev.hp + 30),
+        potions: (prev.potions || 0) - 1,
+      }));
       const result = await combat.executeAction("defend", effectivePlayer, zoneBiome?.name);
       if (result) {
         setPlayer((prev) => ({ ...prev, hp: result.newPlayerHp }));
@@ -485,12 +509,12 @@ export default function App() {
         const u = { ...prev, gold: prev.gold - item.cost };
         if (item.stat === "atk") u.atk = prev.atk + item.bonus;
         else if (item.stat === "def") u.def = prev.def + item.bonus;
-        else if (item.stat === "hp") u.hp = Math.min(prev.maxHp, prev.hp + item.bonus);
+        else if (item.id === "health_potion") u.potions = (prev.potions || 0) + 1;
         if (item.id !== "health_potion") u.inventory = [...prev.inventory, item.id];
         return u;
       });
       dialogue.close();
-      const st = item.stat === "hp" ? `+${item.bonus} PV` : `+${item.bonus} ${item.stat.toUpperCase()}`;
+      const st = item.id === "health_potion" ? "Stocked" : `+${item.bonus} ${item.stat.toUpperCase()}`;
       dialogue.open([{
         type: "text", speaker: "Ironhammer", text: `*hands over ${item.name}* ${st}. Use it well.`,
       }]);
@@ -503,16 +527,24 @@ export default function App() {
     }
     if (action === "complete_and_return") {
       const reward = activeQuest;
+      let didLevelUp = false;
       setPlayer((prev) => {
         const newXp = prev.xp + reward.reward_xp;
-        const levelUp = newXp >= prev.level * 30;
+        const xpThreshold = prev.level * 30;
+        const levelUp = newXp >= xpThreshold;
+        didLevelUp = levelUp;
+        // On quest complete: heal 30% HP + level up bonuses
+        const newMaxHp = levelUp ? prev.maxHp + 10 : prev.maxHp;
+        const healAmount = Math.floor(prev.maxHp * 0.3);
         return {
           ...prev,
           gold: prev.gold + reward.reward_gold,
-          xp: newXp,
+          xp: levelUp ? newXp - xpThreshold : newXp,
           level: levelUp ? prev.level + 1 : prev.level,
-          hp: levelUp ? prev.maxHp + 10 : prev.hp,
-          maxHp: levelUp ? prev.maxHp + 10 : prev.maxHp,
+          maxHp: newMaxHp,
+          hp: Math.min(newMaxHp, prev.hp + healAmount + (levelUp ? 10 : 0)),
+          atk: levelUp ? prev.atk + 1 : prev.atk,
+          def: levelUp ? prev.def + 1 : prev.def,
         };
       });
       setQuestHistory((prev) => [...prev, activeQuest]);
@@ -521,10 +553,17 @@ export default function App() {
       setLastQuestResult("victory");
       returnToGuild();
       setTimeout(() => {
-        dialogue.open([{
+        const steps = [{
           type: "text", speaker: "Commander Varek",
           text: `Contract fulfilled! +${rewardCopy.reward_gold} gold, +${rewardCopy.reward_xp} XP. Well done, mercenary.`,
-        }]);
+        }];
+        if (didLevelUp) {
+          steps.push({
+            type: "text", speaker: "— LEVEL UP! —", speakerColor: "#d4a856",
+            text: `You are now level ${(player.level || 1) + 1}! +10 Max HP, +1 ATK, +1 DEF. Full heal.`,
+          });
+        }
+        dialogue.open(steps);
       }, 200);
       return;
     }
@@ -537,6 +576,21 @@ export default function App() {
 
     if (action === "leave_shop" || action === "cancel" || action === "noop") {
       dialogue.close();
+    }
+
+    if (action === "use_potion") {
+      if ((player.potions || 0) <= 0) { dialogue.close(); return; }
+      setPlayer((prev) => ({
+        ...prev,
+        hp: Math.min(prev.maxHp, prev.hp + 30),
+        potions: (prev.potions || 0) - 1,
+      }));
+      dialogue.close();
+      dialogue.open([{
+        type: "text", speaker: "— Heal —", speakerColor: "#6a9f4a",
+        text: `You drink a potion. +30 HP.`,
+      }]);
+      return;
     }
     if (action === "stay_zone") {
       dialogue.close();

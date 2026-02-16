@@ -644,6 +644,46 @@ body {
 .hud-mat-label { font-size: 12px; margin-right: 4px; }
 .hud-mat-icon { font-size: 14px; }
 
+/* XP bar */
+.hud-xp {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 16px;
+  background: rgba(15, 12, 8, 0.8);
+  border: 1px solid rgba(106, 159, 74, 0.15);
+  border-radius: 6px;
+}
+
+.hud-xp-label {
+  font-size: 9px;
+  color: #6a9f4a;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.hud-xp-track {
+  flex: 1;
+  height: 6px;
+  background: #1a1510;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.hud-xp-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #4a7a2a, #6a9f4a);
+  border-radius: 3px;
+  transition: width 0.4s ease;
+}
+
+.hud-xp-text {
+  font-size: 9px;
+  color: #4a5a3a;
+  min-width: 45px;
+  text-align: right;
+}
+
 .hud-controls {
   padding: 10px 16px;
   background: rgba(15, 12, 8, 0.8);

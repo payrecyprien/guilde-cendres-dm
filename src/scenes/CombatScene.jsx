@@ -107,11 +107,11 @@ export default function CombatScene({
               <span className="btn-label">Defend</span>
             </button>
             <button
-              className={`combat-btn btn-potion ${player.hp >= player.maxHp ? "btn-disabled" : ""}`}
-              onClick={() => player.hp < player.maxHp && onAction("potion")}
+              className={`combat-btn btn-potion ${(player.potions || 0) <= 0 || player.hp >= player.maxHp ? "btn-disabled" : ""}`}
+              onClick={() => (player.potions || 0) > 0 && player.hp < player.maxHp && onAction("potion")}
             >
               <span className="btn-icon">🧪</span>
-              <span className="btn-label">Potion</span>
+              <span className="btn-label">Potion ({player.potions || 0})</span>
             </button>
             <button className="combat-btn btn-flee" onClick={() => onAction("flee")}>
               <span className="btn-icon">🏃</span>

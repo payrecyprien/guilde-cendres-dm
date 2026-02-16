@@ -59,6 +59,7 @@ export const DEFAULT_PLAYER = {
   gold: 0,
   level: 1,
   xp: 0,
+  potions: 0,
   inventory: [],
   ingredients: [],
   craftedGear: [],

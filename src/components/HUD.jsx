@@ -1,6 +1,9 @@
 import { INGREDIENTS } from "../data/crafting";
 
 export default function HUD({ player, activeQuest }) {
+  const xpThreshold = player.level * 30;
+  const xpPercent = Math.min(100, Math.round((player.xp / xpThreshold) * 100));
+
   return (
     <div className="hud">
       {/* Stats */}
@@ -32,6 +35,15 @@ export default function HUD({ player, activeQuest }) {
         </div>
       </div>
 
+      {/* XP bar */}
+      <div className="hud-xp">
+        <span className="hud-xp-label">XP</span>
+        <div className="hud-xp-track">
+          <div className="hud-xp-fill" style={{ width: `${xpPercent}%` }} />
+        </div>
+        <span className="hud-xp-text">{player.xp}/{xpThreshold}</span>
+      </div>
+
       {/* Active quest */}
       {activeQuest && (
         <div className="hud-quest">
@@ -49,6 +61,14 @@ export default function HUD({ player, activeQuest }) {
               {INGREDIENTS[id]?.icon || "?"}
             </span>
           ))}
+        </div>
+      )}
+
+      {/* Potions */}
+      {(player.potions || 0) > 0 && (
+        <div className="hud-materials">
+          <span className="hud-mat-label">🧪</span>
+          <span className="hud-mat-icon">{player.potions}</span>
         </div>
       )}
 
