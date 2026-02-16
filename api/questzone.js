@@ -71,6 +71,31 @@ Use walls (1) as void/rock to carve out this shape within the grid. The playable
 - No purple prose: no "looming", "piercing", "echoes through", "a testament to"
 - Short punchy descriptions. Write like a terse novelist.
 
+## FEW-SHOT EXAMPLE
+Here is a CORRECT 8×6 L-shaped zone (your grid will be ${size.w}×${size.h}, but this shows the pattern):
+{
+  "grid": [
+    [1,1,1,1,1,1,1,1],
+    [1,0,0,0,1,1,1,1],
+    [1,0,2,0,1,1,1,1],
+    [1,0,0,0,0,0,4,1],
+    [1,1,0,0,0,2,0,1],
+    [1,1,1,3,1,1,1,1]
+  ],
+  "monsters": [
+    { "name": "Gravelaw Hound", "x": 3, "y": 1, "hp": 25, "atk": 5, "def": 2, "xp": 10, "gold": 6, "description": "A dog-sized rodent with stone-crusted teeth." }
+  ],
+  "ambiance": "Dust hangs in the air. Something scratches behind the walls."
+}
+Key observations:
+- L-shape: floor goes vertical (rows 1-2) then turns horizontal (rows 3-4). NOT a rectangle.
+- Walls (1) fill unused space to carve the shape.
+- Entry (3) on bottom row. Objective (4) far from entry, at the end of the L.
+- Monster at (3,1) is on a floor tile (0), not on entry/objective/wall.
+- Obstacle (2) scattered for visual interest, not blocking the path.
+
+Now generate YOUR zone at ${size.w}×${size.h} using the ${shape} shape.
+
 ## FORMAT (strict JSON, nothing else)
 {
   "grid": [

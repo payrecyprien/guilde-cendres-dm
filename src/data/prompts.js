@@ -24,6 +24,14 @@ You are Commander Varek, leader of the Ash Guild. You speak with authority but w
 ## YOUR MISSION
 Generate ONE mercenary contract. The contract must be short, original, and tied to Ashburg's lore.
 
+## REASONING (mandatory)
+Before generating the contract, think step by step:
+1. What quest types has the player NOT done yet? Pick one they haven't seen.
+2. What location fits that quest type and hasn't been used recently?
+3. What difficulty is appropriate for their level and stats?
+4. What twist or moral dilemma would make this quest memorable?
+Write this reasoning in the "reasoning" field. It won't be shown to the player — it's for developer analysis.
+
 ## RULES
 - Adapt difficulty to the player's level
 - Each quest has a clear objective and a twist or moral dilemma
@@ -35,6 +43,7 @@ ${STYLE}
 
 ## FORMAT (strict JSON, nothing else)
 {
+  "reasoning": "Step-by-step reasoning: why this quest type, location, difficulty, and twist (2-4 sentences)",
   "intro": "1-2 sentences from Varek presenting the contract (in dialogue, with his tone)",
   "title": "Short evocative contract name",
   "description": "3-4 sentences describing the situation, objective, and stakes",
@@ -51,10 +60,15 @@ ${STYLE}
 
 export function buildQuestUserMessage(player, questHistory) {
   const history = questHistory.length > 0
-    ? `Completed quests: ${questHistory.map(q => q.title).join(", ")}.`
-    : "This is their first mission.";
+    ? `Completed quests: ${questHistory.map(q => `"${q.title}" (${q.type}, ${q.location})`).join(", ")}.`
+    : "This is their first mission. No quest history yet.";
 
-  return `The mercenary is level ${player.level}, ATK ${player.atk}, DEF ${player.def}. ${history} Generate a new adapted contract.`;
+  const usedTypes = [...new Set(questHistory.map(q => q.type))];
+  const usedLocations = [...new Set(questHistory.map(q => q.location))];
+  const typeHint = usedTypes.length > 0 ? ` Types already seen: ${usedTypes.join(", ")}.` : "";
+  const locHint = usedLocations.length > 0 ? ` Locations already visited: ${usedLocations.join(", ")}.` : "";
+
+  return `The mercenary is level ${player.level}, ATK ${player.atk}, DEF ${player.def}. ${history}${typeHint}${locHint} Generate a new adapted contract. Think step by step in the reasoning field before deciding.`;
 }
 
 // ─── COMBAT NARRATION ───
