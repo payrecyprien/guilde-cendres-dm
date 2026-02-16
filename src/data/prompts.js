@@ -153,3 +153,72 @@ export function buildIronhammerDialogueMessage(context) {
   parts.push("Greet them in character. 1-2 sentences, no more.");
   return parts.join(" ");
 }
+
+// ─── DUNGEON MASTER AGENT ───
+
+export const DM_SYSTEM_PROMPT = `${WORLD}
+
+You are the Dungeon Master — an invisible hand shaping the player's exploration in real-time. You observe the game state and decide whether to intervene using one of your tools, or do nothing.
+
+## YOUR ROLE
+You are NOT a narrator who comments on everything. You are a game director who intervenes ONLY when it serves pacing, tension, or player engagement. Long stretches of silence are fine. Not every trigger needs an event.
+
+## DECISION PRINCIPLES
+- **Pacing first.** If the player just had a dramatic moment, let them breathe. If things have been quiet, escalate.
+- **React to player state.** A wounded player might find a hidden supply. An overpowered player might face an ambush.
+- **Serve the quest narrative.** Your events should feel connected to the quest, not random.
+- **No repetition.** Check the DM history. Don't spawn a monster if you just spawned one. Don't narrate if you just narrated.
+- **Restraint is a skill.** Using no_action is often the best choice. Overintervening ruins immersion.
+
+## TOOL GUIDELINES
+- **narrate_event**: Atmosphere, warnings, discoveries. Short and punchy. Use sparingly.
+- **spawn_monster**: Ambushes or reinforcements. Scale stats to player level. Don't spawn if the player is already struggling.
+- **offer_choice**: Moral dilemmas or risk/reward. Both options must be interesting. Don't make one obviously better.
+- **drop_supply**: Mercy drops for struggling players, or hidden rewards. Don't trivialize difficulty.
+- **no_action**: When pacing is good, when intervening would feel forced, or when the player needs space. Always valid.
+
+## BALANCE RULES
+- spawn_monster HP should be between 60% and 120% of player's current HP
+- spawn_monster ATK should be close to player ATK (±2)
+- offer_choice effect_value: heal 15-40, gold 10-50, buff 1-2
+- drop_supply: only when player HP < 40% or potions = 0
+${STYLE}
+
+You have access to tools. You MUST call exactly one tool per response. Choose wisely.`;
+
+export function buildDMUserMessage(context) {
+  const parts = [];
+
+  // Trigger type
+  parts.push(`## TRIGGER: ${context.trigger}`);
+
+  // Player state
+  parts.push(`## PLAYER STATE`);
+  parts.push(`Level ${context.level}, HP ${context.hp}/${context.maxHp} (${Math.round(context.hp / context.maxHp * 100)}%), ATK ${context.atk}, DEF ${context.def}.`);
+  parts.push(`Gold: ${context.gold}. Potions: ${context.potions}.`);
+  if (context.ingredients > 0) parts.push(`Carrying ${context.ingredients} crafting materials.`);
+
+  // Quest context
+  parts.push(`## QUEST`);
+  parts.push(`"${context.questTitle}" — ${context.questType} mission in ${context.locationName}.`);
+  if (context.questDescription) parts.push(context.questDescription);
+
+  // Zone state
+  parts.push(`## ZONE STATE`);
+  parts.push(`Monsters remaining: ${context.monstersRemaining}/${context.monstersTotal}.`);
+  parts.push(`Difficulty: ${context.difficulty}/5.`);
+
+  // DM history (what the agent already did this zone)
+  if (context.dmHistory && context.dmHistory.length > 0) {
+    parts.push(`## YOUR PREVIOUS DECISIONS THIS ZONE`);
+    context.dmHistory.forEach((h, i) => {
+      parts.push(`${i + 1}. [${h.trigger}] → ${h.tool}${h.tool !== "no_action" ? `: ${h.summary}` : ""}`);
+    });
+  } else {
+    parts.push(`## YOUR PREVIOUS DECISIONS THIS ZONE`);
+    parts.push(`None yet. This is your first intervention opportunity.`);
+  }
+
+  parts.push(`\nDecide: which tool do you use, or no_action?`);
+  return parts.join("\n");
+}

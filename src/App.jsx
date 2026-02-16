@@ -10,9 +10,10 @@ import {
   CRAFT_SYSTEM_PROMPT, buildCraftUserMessage,
   VAREK_DIALOGUE_PROMPT, buildVarekDialogueMessage,
   IRONHAMMER_DIALOGUE_PROMPT, buildIronhammerDialogueMessage,
+  DM_SYSTEM_PROMPT, buildDMUserMessage,
 } from "./data/prompts";
 import { INGREDIENTS, rollDrop, MAX_CRAFTED_SLOTS } from "./data/crafting";
-import { generateQuest, generateQuestZone, craftItem, getNPCDialogue, generateMonsterPortrait } from "./utils/api";
+import { generateQuest, generateQuestZone, craftItem, getNPCDialogue, generateMonsterPortrait, callDungeonMaster } from "./utils/api";
 import useDialogue from "./hooks/useDialogue";
 import useCombat from "./hooks/useCombat";
 import useKeyboard from "./hooks/useKeyboard";
@@ -55,9 +56,15 @@ export default function App() {
   const [highlightedMonster, setHighlightedMonster] = useState(null);
   const [showHint, setShowHint] = useState(null);
 
+  // ─── DUNGEON MASTER AGENT STATE ───
+  const [dmHistory, setDmHistory] = useState([]);
+  const [dmTriggered, setDmTriggered] = useState(new Set());
+  const [initialMonsterCount, setInitialMonsterCount] = useState(0);
+
   const gameRef = useRef(null);
   const isGenerating = useRef(false);
   const combatTargetRef = useRef(null);
+  const dmPendingChoice = useRef(null);
 
   // ─── DERIVED ───
   const objectiveUnlocked = !!activeQuest && zoneMonsters.length === 0;
@@ -107,6 +114,156 @@ export default function App() {
     if (player.ingredients?.length >= 2) return "*eyes the materials* Looks like you've got something for me.";
     return "*strikes the anvil* What do you need?";
   }, [player.hp, player.maxHp, player.ingredients]);
+
+  // ═══════════════════════════════════════════
+  // DUNGEON MASTER AGENT
+  // ═══════════════════════════════════════════
+
+  const findSpawnTile = useCallback((grid, playerPos, monsters) => {
+    // Find a floor tile at least 3 tiles from player, not occupied by a monster
+    const candidates = [];
+    for (let y = 1; y < grid.length - 1; y++) {
+      for (let x = 1; x < grid[0].length - 1; x++) {
+        if (grid[y][x] !== 0) continue;
+        const dist = Math.abs(x - playerPos.x) + Math.abs(y - playerPos.y);
+        if (dist < 3 || dist > 8) continue;
+        if (monsters.some((m) => m.x === x && m.y === y)) continue;
+        candidates.push({ x, y, dist });
+      }
+    }
+    if (candidates.length === 0) return null;
+    // Pick one at medium distance
+    candidates.sort((a, b) => a.dist - b.dist);
+    return candidates[Math.floor(candidates.length / 2)];
+  }, []);
+
+  const executeDMTool = useCallback((decision) => {
+    const { tool, input } = decision;
+
+    switch (tool) {
+      case "narrate_event":
+        dialogue.open([{
+          type: "text",
+          speaker: input.speaker || "The Darkness",
+          speakerColor: "#b06040",
+          text: input.text,
+        }]);
+        break;
+
+      case "spawn_monster":
+        if (zoneData?.grid) {
+          const tile = findSpawnTile(zoneData.grid, playerPos, zoneMonsters);
+          if (tile) {
+            const newMonster = {
+              name: input.name,
+              description: input.description || "",
+              x: tile.x,
+              y: tile.y,
+              hp: input.hp,
+              atk: input.atk,
+              def: input.def,
+              xp: input.xp || 10,
+              gold: input.gold || 8,
+            };
+            setZoneMonsters((prev) => [...prev, newMonster]);
+            setInitialMonsterCount((prev) => prev + 1);
+            // Pre-generate portrait for spawned monster
+            generateMonsterPortrait(newMonster.name, newMonster.description, activeQuest?.location)
+              .then((url) => {
+                if (url) setMonsterPortraits((prev) => ({ ...prev, [newMonster.name]: url }));
+              }).catch(() => {});
+            dialogue.open([{
+              type: "text",
+              speaker: "— Ambush! —",
+              speakerColor: "#c0392b",
+              text: input.narrative,
+            }]);
+          }
+        }
+        break;
+
+      case "offer_choice":
+        dmPendingChoice.current = input;
+        dialogue.open([{
+          type: "choice",
+          speaker: input.speaker || "— Event —",
+          speakerColor: "#b06040",
+          text: input.prompt_text,
+          choices: [
+            { label: `① ${input.option_a.label}`, action: "dm_choice_a", style: "choice-accept" },
+            { label: `② ${input.option_b.label}`, action: "dm_choice_b", style: "choice-decline" },
+          ],
+        }]);
+        break;
+
+      case "drop_supply":
+        if (input.type === "potion") {
+          setPlayer((prev) => ({ ...prev, potions: (prev.potions || 0) + 1 }));
+        } else {
+          // Random ingredient
+          const allIds = Object.keys(INGREDIENTS);
+          const randId = allIds[Math.floor(Math.random() * allIds.length)];
+          const ing = INGREDIENTS[randId];
+          setPlayer((prev) => ({ ...prev, ingredients: [...prev.ingredients, randId] }));
+          input.narration += ` (${ing.icon} ${ing.name})`;
+        }
+        dialogue.open([{
+          type: "text",
+          speaker: "— Discovery —",
+          speakerColor: "#6fa0e0",
+          text: input.narration,
+        }]);
+        break;
+
+      case "no_action":
+        // Nothing shown to player — logged in DevPanel only
+        break;
+    }
+  }, [zoneData, playerPos, zoneMonsters, activeQuest, dialogue, findSpawnTile]);
+
+  const fireDMTrigger = useCallback(async (trigger, currentMonsterCount) => {
+    // Don't fire if already triggered this type
+    if (dmTriggered.has(trigger)) return;
+    setDmTriggered((prev) => new Set([...prev, trigger]));
+
+    const context = {
+      trigger,
+      level: player.level,
+      hp: player.hp,
+      maxHp: player.maxHp,
+      atk: player.atk,
+      def: player.def,
+      gold: player.gold,
+      potions: player.potions || 0,
+      ingredients: player.ingredients?.length || 0,
+      questTitle: activeQuest?.title || "Unknown",
+      questType: activeQuest?.type || "extermination",
+      questDescription: activeQuest?.description || "",
+      locationName: activeQuest?.location_name || activeQuest?.location || "Unknown",
+      difficulty: activeQuest?.difficulty || 1,
+      monstersRemaining: currentMonsterCount,
+      monstersTotal: initialMonsterCount,
+      dmHistory,
+    };
+
+    try {
+      const decision = await callDungeonMaster(DM_SYSTEM_PROMPT, buildDMUserMessage(context));
+
+      // Record in DM history
+      const summary = decision.tool === "no_action"
+        ? ""
+        : decision.tool === "narrate_event" ? decision.input?.text?.slice(0, 60)
+        : decision.tool === "spawn_monster" ? `Spawned "${decision.input?.name}"`
+        : decision.tool === "offer_choice" ? decision.input?.prompt_text?.slice(0, 60)
+        : decision.tool === "drop_supply" ? `Dropped ${decision.input?.type}`
+        : "";
+      setDmHistory((prev) => [...prev, { trigger, tool: decision.tool, summary }]);
+
+      executeDMTool(decision);
+    } catch (err) {
+      console.error("DM trigger failed:", err);
+    }
+  }, [dmTriggered, player, activeQuest, initialMonsterCount, dmHistory, executeDMTool]);
 
   // ═══════════════════════════════════════════
   // GUILD INTERACTIONS
@@ -263,6 +420,11 @@ export default function App() {
       setZoneData(zone);
       setZoneMonsters(zone.monsters || []);
       setZoneBiome(biome);
+
+      // Reset Dungeon Master agent state for new zone
+      setDmHistory([]);
+      setDmTriggered(new Set());
+      setInitialMonsterCount((zone.monsters || []).length);
 
       const gridH = zone.grid.length;
       const gridW = zone.grid[0]?.length || 14;
@@ -455,7 +617,6 @@ export default function App() {
           ...prev,
           ingredients: [...prev.ingredients, dropId],
         }));
-        // Show drop after returning to quest
         setScene(SCENE.QUEST);
         setTimeout(() => {
           dialogue.open([{
@@ -466,6 +627,36 @@ export default function App() {
       } else {
         setScene(SCENE.QUEST);
       }
+
+      // ─── DUNGEON MASTER TRIGGER CHECK ───
+      const remainingAfterKill = zoneMonsters.length - 1; // current kill not yet removed from state
+      const killCount = initialMonsterCount - remainingAfterKill;
+      const hpPercent = player.hp / player.maxHp;
+
+      // Determine which trigger to fire (priority order, max 1 per combat)
+      let trigger = null;
+      if (killCount === 1) {
+        trigger = "first_kill";
+      } else if (killCount >= Math.ceil(initialMonsterCount / 2) && killCount < initialMonsterCount) {
+        trigger = "half_cleared";
+      }
+      // Player wounded overrides if HP is critical
+      if (hpPercent < 0.3 && !dmTriggered.has("player_wounded")) {
+        trigger = "player_wounded";
+      }
+      // Zone cleared
+      if (remainingAfterKill === 0) {
+        trigger = "zone_cleared";
+      }
+
+      if (trigger) {
+        // Fire DM async with delay to not conflict with loot dialogue
+        const dmDelay = dropId ? 2500 : 1200;
+        setTimeout(() => {
+          fireDMTrigger(trigger, remainingAfterKill);
+        }, dmDelay);
+      }
+
     } else if (combat.phase === "defeat") {
       setActiveQuest(null);
       setLastQuestResult("defeat");
@@ -475,7 +666,7 @@ export default function App() {
     }
 
     combatTargetRef.current = null;
-  }, [combat.phase, combat.loot, activeQuest, dialogue, returnToGuild]);
+  }, [combat.phase, combat.loot, activeQuest, dialogue, returnToGuild, zoneMonsters.length, initialMonsterCount, player.hp, player.maxHp, dmTriggered, fireDMTrigger]);
 
   // ═══════════════════════════════════════════
   // CHOICE HANDLER
@@ -651,7 +842,66 @@ export default function App() {
       })();
       return;
     }
-  }, [pendingQuest, player, activeQuest, zoneMonsters, dialogue, returnToGuild]);
+
+    // ─── DUNGEON MASTER CHOICES ───
+    if (action === "dm_choice_a" || action === "dm_choice_b") {
+      const choiceData = dmPendingChoice.current;
+      if (!choiceData) { dialogue.close(); return; }
+
+      const option = action === "dm_choice_a" ? choiceData.option_a : choiceData.option_b;
+      dmPendingChoice.current = null;
+      dialogue.close();
+
+      // Execute the effect
+      switch (option.effect_type) {
+        case "heal":
+          setPlayer((prev) => ({ ...prev, hp: Math.min(prev.maxHp, prev.hp + (option.effect_value || 20)) }));
+          break;
+        case "gold":
+          setPlayer((prev) => ({ ...prev, gold: prev.gold + (option.effect_value || 15) }));
+          break;
+        case "buff_atk":
+          setPlayer((prev) => ({ ...prev, atk: prev.atk + (option.effect_value || 1) }));
+          break;
+        case "buff_def":
+          setPlayer((prev) => ({ ...prev, def: prev.def + (option.effect_value || 1) }));
+          break;
+        case "ingredient": {
+          const allIds = Object.keys(INGREDIENTS);
+          const randId = allIds[Math.floor(Math.random() * allIds.length)];
+          setPlayer((prev) => ({ ...prev, ingredients: [...prev.ingredients, randId] }));
+          break;
+        }
+        case "spawn_monster":
+          // The choice spawns a monster — find a tile and add it
+          if (zoneData?.grid) {
+            const tile = findSpawnTile(zoneData.grid, playerPos, zoneMonsters);
+            if (tile) {
+              const m = {
+                name: "Drawn Predator", description: "A creature summoned by your choice.",
+                x: tile.x, y: tile.y,
+                hp: Math.round(player.maxHp * 0.7), atk: player.atk, def: Math.max(1, player.def - 1),
+                xp: 15, gold: 12,
+              };
+              setZoneMonsters((prev) => [...prev, m]);
+              setInitialMonsterCount((prev) => prev + 1);
+            }
+          }
+          break;
+      }
+
+      // Show narration for the chosen option
+      setTimeout(() => {
+        dialogue.open([{
+          type: "text",
+          speaker: choiceData.speaker || "— Consequence —",
+          speakerColor: "#b06040",
+          text: option.narration || "The choice is made.",
+        }]);
+      }, 200);
+      return;
+    }
+  }, [pendingQuest, player, activeQuest, zoneMonsters, dialogue, returnToGuild, zoneData, playerPos, findSpawnTile]);
 
   // ═══════════════════════════════════════════
   // KEYBOARD — single ref, reads all state via closure

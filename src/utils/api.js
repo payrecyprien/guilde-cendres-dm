@@ -1,5 +1,5 @@
 import aiLogger from "./aiLogger";
-import { validateQuest, validateZone, validateNarration, validateCraftedItem } from "./aiValidation";
+import { validateQuest, validateZone, validateNarration, validateCraftedItem, validateDMDecision } from "./aiValidation";
 
 const API_ENDPOINT = "/api/chat";
 
@@ -205,5 +205,40 @@ export async function getNPCDialogue(systemPrompt, userMessage) {
   } catch (err) {
     aiLogger.fail(logId, err);
     return null;
+  }
+}
+
+/**
+ * Call the Dungeon Master agent (Sonnet with function calling)
+ * Returns: { tool, input, reasoning }
+ */
+export async function callDungeonMaster(systemPrompt, userMessage) {
+  const logId = aiLogger.start({
+    endpoint: "Dungeon Master",
+    model: "claude-sonnet-4-5 (agent)",
+    systemPrompt,
+    userMessage,
+  });
+
+  try {
+    const response = await fetch("/api/dungeon-master", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ system: systemPrompt, message: userMessage }),
+    });
+
+    const data = await response.json();
+    const validation = validateDMDecision(data);
+
+    aiLogger.complete(logId, {
+      response: data,
+      rawResponse: JSON.stringify(data, null, 2),
+      validationResult: validation,
+    });
+
+    return data;
+  } catch (err) {
+    aiLogger.fail(logId, err);
+    return { tool: "no_action", input: { reasoning: `Client error: ${err.message}` }, reasoning: "" };
   }
 }

@@ -204,3 +204,94 @@ export function validateCraftedItem(item) {
       : `⚠️ ${issues.length} issue${issues.length !== 1 ? "s" : ""}, ${fixes.length} fix${fixes.length !== 1 ? "es" : ""} applied`,
   };
 }
+
+/**
+ * Validate Dungeon Master agent decision
+ */
+const VALID_DM_TOOLS = ["narrate_event", "spawn_monster", "offer_choice", "drop_supply", "no_action"];
+const VALID_CHOICE_EFFECTS = ["heal", "gold", "spawn_monster", "ingredient", "buff_atk", "buff_def"];
+
+export function validateDMDecision(decision) {
+  const issues = [];
+  const fixes = [];
+
+  if (!decision || !decision.tool) {
+    issues.push("Missing tool decision");
+    return { valid: false, issues, fixes, summary: "❌ No tool decision returned" };
+  }
+
+  if (!VALID_DM_TOOLS.includes(decision.tool)) {
+    issues.push(`Unknown tool "${decision.tool}"`);
+    return { valid: false, issues, fixes, summary: `❌ Unknown tool: ${decision.tool}` };
+  }
+
+  const input = decision.input || {};
+
+  switch (decision.tool) {
+    case "narrate_event":
+      if (!input.text || input.text.length < 5) {
+        fixes.push("narrate_event text missing or too short → added fallback");
+        input.text = input.text || "Something stirs in the shadows.";
+      }
+      if (!input.speaker) {
+        fixes.push("Missing speaker → defaulted");
+        input.speaker = "The Darkness";
+      }
+      // Slop check on DM narration
+      [/—/g, /tapestry of/i, /symphony of/i, /a testament to/i, /sends shivers/i].forEach((pattern) => {
+        if (pattern.test(input.text || "")) {
+          issues.push(`AI slop in DM narration: ${pattern.source}`);
+        }
+      });
+      break;
+
+    case "spawn_monster":
+      if (!input.name) { fixes.push("Missing monster name → default"); input.name = "Shadow Lurker"; }
+      if (typeof input.hp !== "number" || input.hp < 5) { fixes.push(`Monster HP invalid → 20`); input.hp = 20; }
+      if (typeof input.atk !== "number" || input.atk < 1) { fixes.push(`Monster ATK invalid → 4`); input.atk = 4; }
+      if (typeof input.def !== "number" || input.def < 0) { fixes.push(`Monster DEF invalid → 2`); input.def = 2; }
+      if (typeof input.xp !== "number") { input.xp = 10; fixes.push("Missing XP → 10"); }
+      if (typeof input.gold !== "number") { input.gold = 8; fixes.push("Missing gold → 8"); }
+      if (!input.narrative) { fixes.push("Missing spawn narrative"); input.narrative = "A creature emerges from the dark."; }
+      break;
+
+    case "offer_choice":
+      if (!input.prompt_text) { fixes.push("Missing choice prompt"); input.prompt_text = "You face a decision."; }
+      for (const key of ["option_a", "option_b"]) {
+        const opt = input[key];
+        if (!opt) {
+          issues.push(`Missing ${key}`);
+        } else {
+          if (!opt.label) { fixes.push(`${key} missing label`); opt.label = "Choose"; }
+          if (!VALID_CHOICE_EFFECTS.includes(opt.effect_type)) {
+            fixes.push(`${key} invalid effect "${opt.effect_type}" → "gold"`);
+            opt.effect_type = "gold";
+          }
+          if (typeof opt.effect_value !== "number") { fixes.push(`${key} missing value → 10`); opt.effect_value = 10; }
+          if (!opt.narration) { fixes.push(`${key} missing narration`); opt.narration = "Done."; }
+        }
+      }
+      break;
+
+    case "drop_supply":
+      if (!["potion", "ingredient"].includes(input.type)) {
+        fixes.push(`Invalid supply type "${input.type}" → "potion"`);
+        input.type = "potion";
+      }
+      if (!input.narration) { fixes.push("Missing drop narration"); input.narration = "You find something useful."; }
+      break;
+
+    case "no_action":
+      if (!input.reasoning) { fixes.push("no_action missing reasoning"); input.reasoning = "No reason provided"; }
+      break;
+  }
+
+  return {
+    valid: issues.length === 0 && fixes.length === 0,
+    issues,
+    fixes,
+    summary: issues.length === 0 && fixes.length === 0
+      ? `✅ DM chose: ${decision.tool}`
+      : `⚠️ DM chose: ${decision.tool} (${issues.length} issue${issues.length !== 1 ? "s" : ""}, ${fixes.length} fix${fixes.length !== 1 ? "es" : ""})`,
+  };
+}
