@@ -6,11 +6,11 @@ import {
 import { GUILD_MAP, GUILD_START, NPCS } from "./data/guild";
 import { ZT, ZONE_WALKABLE, getBiomeStyle } from "./data/zones";
 import {
-  QUEST_SYSTEM_PROMPT, buildQuestSystemPrompt, buildQuestUserMessage, buildQuestRetrievalQuery,
+  buildQuestSystemPrompt, buildQuestUserMessage, buildQuestRetrievalQuery,
   ARMORER_ITEMS, CRAFT_SYSTEM_PROMPT, buildCraftUserMessage,
   VAREK_DIALOGUE_PROMPT, buildVarekDialogueMessage,
   IRONHAMMER_DIALOGUE_PROMPT, buildIronhammerDialogueMessage,
-  DM_SYSTEM_PROMPT, buildDMSystemPrompt, buildDMUserMessage, buildDMRetrievalQuery,
+  buildDMSystemPrompt, buildDMUserMessage, buildDMRetrievalQuery,
 } from "./data/prompts";
 import { INGREDIENTS, rollDrop, MAX_CRAFTED_SLOTS } from "./data/crafting";
 import { generateQuest, generateQuestZone, craftItem, getNPCDialogue, generateMonsterPortrait, callDungeonMaster, retrieveLore } from "./utils/api";

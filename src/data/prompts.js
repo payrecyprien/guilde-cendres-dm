@@ -8,7 +8,7 @@ Dangerous locations: Gloomhaze Forest (disappearances), Northern Ruins (avoided 
 Threats: creatures roam the wilds, occult rituals are taking place, a necromancer is rumored to be active.`;
 
 // ─── RAG: Format retrieved lore entries for prompt injection ───
-export function formatRetrievedLore(entries) {
+function formatRetrievedLore(entries) {
   if (!entries || entries.length === 0) return "";
   const formatted = entries.map((e) =>
     `[${e.category.toUpperCase()}] ${e.title}: ${e.content}`
@@ -35,7 +35,6 @@ const STYLE = `
 - Prefer active voice. Prefer concrete verbs over abstract ones. "The blade cuts" not "the blade dances"`;
 
 // ─── QUEST GENERATION ───
-export const QUEST_SYSTEM_PROMPT = buildQuestSystemPrompt(); // static fallback for backward compat
 
 export function buildQuestSystemPrompt(retrievedLore) {
   return `${buildWorldContext(retrievedLore)}
@@ -191,8 +190,6 @@ export function buildIronhammerDialogueMessage(context) {
 }
 
 // ─── DUNGEON MASTER AGENT ───
-
-export const DM_SYSTEM_PROMPT = buildDMSystemPrompt(); // static fallback
 
 export function buildDMSystemPrompt(retrievedLore) {
   return `${buildWorldContext(retrievedLore)}
