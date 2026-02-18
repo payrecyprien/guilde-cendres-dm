@@ -60,4 +60,4 @@ WASD / ZQSD / Arrows: move · E / Space: interact · J: journal · T: dev panel 
 
 ---
 
-*[Cyprien Payré](https://github.com/payrecyprien) · Prompt Engineering × Game Design*
+*[Cyprien Payre](https://github.com/payrecyprien) · Prompt Engineering × Game Design*

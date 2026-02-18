@@ -145,4 +145,4 @@ For a Prompt Specialist role in a game studio, this project shows:
 
 ---
 
-*Built by Cyprien · React + Vite · Claude Sonnet & Haiku · GPT Image 1 · OpenAI Embeddings · Deployed on Vercel*
+*Built by Cyprien Payre · React + Vite · Claude Sonnet & Haiku · GPT Image 1 · OpenAI Embeddings · Deployed on Vercel*
