@@ -19,6 +19,17 @@ function parseJSON(text) {
 }
 
 /**
+ * Strip em-dashes and other slop from AI text output
+ */
+function sanitizeText(text) {
+  if (!text) return text;
+  return text
+    .replace(/—/g, ",")
+    .replace(/\u2014/g, ",")
+    .replace(/\u2013/g, "-");
+}
+
+/**
  * RAG: Retrieve relevant lore entries from the knowledge base
  * Returns array of {id, title, category, content, tags, score} or []
  */
@@ -91,6 +102,11 @@ export async function generateQuest(systemPrompt, userMessage) {
     const quest = parseJSON(rawText);
     if (!quest || !quest.title) throw new Error("Quest parsing failed");
 
+    // Sanitize text fields
+    if (quest.intro) quest.intro = sanitizeText(quest.intro);
+    if (quest.description) quest.description = sanitizeText(quest.description);
+    if (quest.enemy_hint) quest.enemy_hint = sanitizeText(quest.enemy_hint);
+
     const validation = validateQuest(quest);
     aiLogger.complete(logId, { response: quest, rawResponse: rawText, validationResult: validation });
     return quest;
@@ -121,6 +137,10 @@ export async function generateQuestZone(quest) {
     const data = await response.json();
     if (data.error && !data.grid) throw new Error(data.error);
 
+    // Sanitize text fields
+    if (data.ambiance) data.ambiance = sanitizeText(data.ambiance);
+    if (data.monsters) data.monsters.forEach(m => { if (m.description) m.description = sanitizeText(m.description); });
+
     const validation = validateZone(data);
     aiLogger.complete(logId, { response: data, validationResult: validation });
     return data;
@@ -149,6 +169,12 @@ export async function getCombatNarration(systemPrompt, userMessage) {
     });
 
     const narration = await response.json();
+
+    // Sanitize text fields
+    if (narration.player_action_text) narration.player_action_text = sanitizeText(narration.player_action_text);
+    if (narration.monster_action_text) narration.monster_action_text = sanitizeText(narration.monster_action_text);
+    if (narration.ambient_text) narration.ambient_text = sanitizeText(narration.ambient_text);
+
     const validation = validateNarration(narration);
     aiLogger.complete(logId, { response: narration, validationResult: validation });
     return narration;
@@ -237,7 +263,7 @@ export async function getNPCDialogue(systemPrompt, userMessage) {
     });
 
     const data = await response.json();
-    const text = data.text || null;
+    const text = sanitizeText(data.text) || null;
     aiLogger.complete(logId, {
       response: text,
       rawResponse: text || "(empty response)",
@@ -270,6 +296,17 @@ export async function callDungeonMaster(systemPrompt, userMessage) {
     });
 
     const data = await response.json();
+
+    // Sanitize text fields in DM decision
+    if (data.input) {
+      if (data.input.text) data.input.text = sanitizeText(data.input.text);
+      if (data.input.narrative) data.input.narrative = sanitizeText(data.input.narrative);
+      if (data.input.narration) data.input.narration = sanitizeText(data.input.narration);
+      if (data.input.prompt_text) data.input.prompt_text = sanitizeText(data.input.prompt_text);
+      if (data.input.option_a?.narration) data.input.option_a.narration = sanitizeText(data.input.option_a.narration);
+      if (data.input.option_b?.narration) data.input.option_b.narration = sanitizeText(data.input.option_b.narration);
+    }
+
     const validation = validateDMDecision(data);
 
     aiLogger.complete(logId, {
