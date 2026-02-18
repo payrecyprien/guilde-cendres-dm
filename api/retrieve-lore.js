@@ -1,4 +1,4 @@
-import { createRequire } from "module";
+import { readFileSync } from "fs";
 
 const OPENAI_URL = "https://api.openai.com/v1/embeddings";
 const EMBED_MODEL = "text-embedding-3-small";
@@ -9,8 +9,9 @@ let embeddingsData = null;
 function loadEmbeddings() {
   if (embeddingsData) return embeddingsData;
   try {
-    const require = createRequire(import.meta.url);
-    embeddingsData = require("./lore-embeddings.json");
+    const filePath = new URL("./lore-embeddings.json", import.meta.url);
+    const raw = readFileSync(filePath, "utf-8");
+    embeddingsData = JSON.parse(raw);
     return embeddingsData;
   } catch {
     return null;
