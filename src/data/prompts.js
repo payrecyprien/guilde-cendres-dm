@@ -1,10 +1,28 @@
 // ─── WORLD CONTEXT (shared across prompts) ───
+// Minimal static fallback — used when RAG retrieval is unavailable
 const WORLD = `You are in the world of Ashburg, a medieval-fantasy village at a crossroads.
 Lord Varen rules the region, advised by the enigmatic Theron.
 The Ash Guild is a mercenary company based in the village.
 Factions: Ashburg Guard, Grey Blades (mercenaries), Obsidian Circle (occult), Crossroads Merchants.
 Dangerous locations: Gloomhaze Forest (disappearances), Northern Ruins (avoided by all), Abandoned Mine, Grimfen Marshes.
 Threats: creatures roam the wilds, occult rituals are taking place, a necromancer is rumored to be active.`;
+
+// ─── RAG: Format retrieved lore entries for prompt injection ───
+export function formatRetrievedLore(entries) {
+  if (!entries || entries.length === 0) return "";
+  const formatted = entries.map((e) =>
+    `[${e.category.toUpperCase()}] ${e.title}: ${e.content}`
+  ).join("\n\n");
+  return `\n## WORLD KNOWLEDGE (retrieved from lore database — use ONLY these details)\n${formatted}\n`;
+}
+
+// Build the world context: use retrieved lore if available, static WORLD as fallback
+function buildWorldContext(retrievedLore) {
+  if (retrievedLore && retrievedLore.length > 0) {
+    return `You are in the world of Ashburg, a medieval-fantasy village at a crossroads. The Ash Guild is a mercenary company operating from this village.\n${formatRetrievedLore(retrievedLore)}`;
+  }
+  return WORLD;
+}
 
 // Shared writing style constraint injected into every narrative prompt
 const STYLE = `
@@ -17,7 +35,10 @@ const STYLE = `
 - Prefer active voice. Prefer concrete verbs over abstract ones. "The blade cuts" not "the blade dances"`;
 
 // ─── QUEST GENERATION ───
-export const QUEST_SYSTEM_PROMPT = `${WORLD}
+export const QUEST_SYSTEM_PROMPT = buildQuestSystemPrompt(); // static fallback for backward compat
+
+export function buildQuestSystemPrompt(retrievedLore) {
+  return `${buildWorldContext(retrievedLore)}
 
 You are Commander Varek, leader of the Ash Guild. You speak with authority but without pomposity. You address the mercenary informally. You are direct, pragmatic, and occasionally sarcastic.
 
@@ -57,6 +78,7 @@ ${STYLE}
   "moral_choice": "A dilemma in one sentence (or null if none)",
   "enemy_hint": "Hint about the type of enemy to face"
 }`;
+}
 
 export function buildQuestUserMessage(player, questHistory) {
   const history = questHistory.length > 0
@@ -170,7 +192,10 @@ export function buildIronhammerDialogueMessage(context) {
 
 // ─── DUNGEON MASTER AGENT ───
 
-export const DM_SYSTEM_PROMPT = `${WORLD}
+export const DM_SYSTEM_PROMPT = buildDMSystemPrompt(); // static fallback
+
+export function buildDMSystemPrompt(retrievedLore) {
+  return `${buildWorldContext(retrievedLore)}
 
 You are the Dungeon Master — an invisible hand shaping the player's exploration in real-time. You observe the game state and decide whether to intervene using one of your tools, or do nothing.
 
@@ -199,6 +224,7 @@ You are NOT a narrator who comments on everything. You are a game director who i
 ${STYLE}
 
 You have access to tools. You MUST call exactly one tool per response. Choose wisely.`;
+}
 
 export function buildDMUserMessage(context) {
   const parts = [];
@@ -235,4 +261,35 @@ export function buildDMUserMessage(context) {
 
   parts.push(`\nDecide: which tool do you use, or no_action?`);
   return parts.join("\n");
+}
+
+// ─── RAG RETRIEVAL QUERY BUILDERS ───
+
+export function buildQuestRetrievalQuery(player, questHistory) {
+  const parts = ["Ashburg mercenary quest"];
+  // Add locations not yet visited
+  const usedLocations = new Set(questHistory.map(q => q.location));
+  const allLocations = ["gloomhaze", "northern_ruins", "mine", "marshes", "trade_road", "east_village"];
+  const fresh = allLocations.filter(l => !usedLocations.has(l));
+  if (fresh.length > 0) parts.push(fresh.join(" "));
+  // Add quest types not yet done
+  const usedTypes = new Set(questHistory.map(q => q.type));
+  const allTypes = ["extermination", "escort", "investigation", "retrieval", "infiltration"];
+  const freshTypes = allTypes.filter(t => !usedTypes.has(t));
+  if (freshTypes.length > 0) parts.push(freshTypes.join(" "));
+  // Player level context
+  if (player.level >= 3) parts.push("advanced threats obsidian circle necromancer");
+  else parts.push("creatures dangers threats");
+  return parts.join(" ");
+}
+
+export function buildDMRetrievalQuery(context) {
+  const parts = [];
+  parts.push(context.locationName || "Ashburg");
+  parts.push(context.questType || "extermination");
+  if (context.questTitle) parts.push(context.questTitle);
+  if (context.trigger === "player_wounded") parts.push("danger threat survival");
+  if (context.trigger === "zone_cleared") parts.push("discovery reward secret");
+  if (context.monstersRemaining <= 1) parts.push("final encounter climax");
+  return parts.join(" ");
 }

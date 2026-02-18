@@ -6,14 +6,14 @@ import {
 import { GUILD_MAP, GUILD_START, NPCS } from "./data/guild";
 import { ZT, ZONE_WALKABLE, getBiomeStyle } from "./data/zones";
 import {
-  QUEST_SYSTEM_PROMPT, buildQuestUserMessage, ARMORER_ITEMS,
-  CRAFT_SYSTEM_PROMPT, buildCraftUserMessage,
+  QUEST_SYSTEM_PROMPT, buildQuestSystemPrompt, buildQuestUserMessage, buildQuestRetrievalQuery,
+  ARMORER_ITEMS, CRAFT_SYSTEM_PROMPT, buildCraftUserMessage,
   VAREK_DIALOGUE_PROMPT, buildVarekDialogueMessage,
   IRONHAMMER_DIALOGUE_PROMPT, buildIronhammerDialogueMessage,
-  DM_SYSTEM_PROMPT, buildDMUserMessage,
+  DM_SYSTEM_PROMPT, buildDMSystemPrompt, buildDMUserMessage, buildDMRetrievalQuery,
 } from "./data/prompts";
 import { INGREDIENTS, rollDrop, MAX_CRAFTED_SLOTS } from "./data/crafting";
-import { generateQuest, generateQuestZone, craftItem, getNPCDialogue, generateMonsterPortrait, callDungeonMaster } from "./utils/api";
+import { generateQuest, generateQuestZone, craftItem, getNPCDialogue, generateMonsterPortrait, callDungeonMaster, retrieveLore } from "./utils/api";
 import useDialogue from "./hooks/useDialogue";
 import useCombat from "./hooks/useCombat";
 import useKeyboard from "./hooks/useKeyboard";
@@ -247,7 +247,12 @@ export default function App() {
     };
 
     try {
-      const decision = await callDungeonMaster(DM_SYSTEM_PROMPT, buildDMUserMessage(context));
+      // RAG: retrieve relevant lore for DM context
+      const dmLoreQuery = buildDMRetrievalQuery(context);
+      const dmLoreEntries = await retrieveLore(dmLoreQuery, 4);
+      const dmSystemPrompt = buildDMSystemPrompt(dmLoreEntries.length > 0 ? dmLoreEntries : null);
+
+      const decision = await callDungeonMaster(dmSystemPrompt, buildDMUserMessage(context));
 
       // Record in DM history
       const summary = decision.tool === "no_action"
@@ -290,7 +295,7 @@ export default function App() {
     if (isGenerating.current) return;
     isGenerating.current = true;
 
-    // Fire AI greeting + quest gen in parallel
+    // Fire AI greeting in parallel (doesn't need lore)
     let aiGreeting = null;
     const greetingPromise = getNPCDialogue(
       VAREK_DIALOGUE_PROMPT,
@@ -300,8 +305,13 @@ export default function App() {
       })
     ).then((text) => { aiGreeting = text; return text; });
 
+    // RAG: retrieve relevant lore, then generate quest with enriched context
+    const loreQuery = buildQuestRetrievalQuery(player, questHistory);
+    const loreEntries = await retrieveLore(loreQuery);
+    const questSystemPrompt = buildQuestSystemPrompt(loreEntries.length > 0 ? loreEntries : null);
+
     const questPromise = generateQuest(
-      QUEST_SYSTEM_PROMPT, buildQuestUserMessage(player, questHistory)
+      questSystemPrompt, buildQuestUserMessage(player, questHistory)
     );
 
     // Replace greeting as soon as AI responds (while quest still loading)

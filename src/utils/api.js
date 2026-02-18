@@ -19,6 +19,48 @@ function parseJSON(text) {
 }
 
 /**
+ * RAG: Retrieve relevant lore entries from the knowledge base
+ * Returns array of {id, title, category, content, tags, score} or []
+ */
+export async function retrieveLore(query, topK = 6) {
+  const logId = aiLogger.start({
+    endpoint: "Lore Retrieval (RAG)",
+    model: "text-embedding-3-small",
+    systemPrompt: "(retrieval — no LLM prompt)",
+    userMessage: query,
+  });
+
+  try {
+    const response = await fetch("/api/retrieve-lore", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ query, topK }),
+    });
+
+    const data = await response.json();
+    const entries = data.entries || [];
+
+    aiLogger.complete(logId, {
+      response: { method: data.method, count: entries.length, entries: entries.map(e => e.title) },
+      rawResponse: JSON.stringify(data, null, 2),
+      validationResult: {
+        valid: entries.length > 0,
+        issues: entries.length === 0 ? ["No lore entries retrieved"] : [],
+        fixes: [],
+        summary: entries.length > 0
+          ? `✅ ${entries.length} entries via ${data.method} (${entries.map(e => e.id).join(", ")})`
+          : "⚠️ No entries retrieved — using static fallback",
+      },
+    });
+
+    return entries;
+  } catch (err) {
+    aiLogger.fail(logId, err);
+    return [];
+  }
+}
+
+/**
  * Generate a quest via AI
  */
 export async function generateQuest(systemPrompt, userMessage) {

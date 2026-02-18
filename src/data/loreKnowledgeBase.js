@@ -1,0 +1,345 @@
+// ─── ASHBURG LORE KNOWLEDGE BASE ───
+// 45+ entries covering NPCs, locations, factions, creatures, events, items, and rumors.
+// Each entry is tagged for retrieval. Total: ~4000 tokens — too large to inject fully,
+// requiring RAG (retrieval of top-K relevant entries per prompt).
+
+const LORE_KNOWLEDGE_BASE = [
+
+  // ════════ NPCs ════════
+  {
+    id: "npc_varek",
+    category: "npc",
+    title: "Commander Varek",
+    content: "Commander Varek leads the Ash Guild with brutal pragmatism. Former sergeant in Lord Varen's guard, he left after a disagreement over civilian protection during the Grey Tide raids. His left arm bears burn scars from the Foundry Collapse. He trusts no one fully but respects competence above all else.",
+    tags: ["varek", "guild", "commander", "leader", "guard", "grey_tide"],
+  },
+  {
+    id: "npc_ironhammer",
+    category: "npc",
+    title: "Ironhammer the Armorer",
+    content: "Ironhammer is a dwarf exile who speaks more through his craft than words. He was expelled from the Underforges for refusing to build weapons for the Obsidian Circle. His work carries a subtle arcane resonance that he refuses to explain. He judges people by the state of their gear.",
+    tags: ["ironhammer", "armorer", "dwarf", "forge", "obsidian_circle", "weapons"],
+  },
+  {
+    id: "npc_theron",
+    category: "npc",
+    title: "Theron, Advisor to Lord Varen",
+    content: "Theron appeared in Ashburg five years ago with no past anyone can trace. He advises Lord Varen on matters of security and the occult. The Obsidian Circle considers him a rival. Some say he can sense magical disturbances across the region. He never enters the Gloomhaze Forest.",
+    tags: ["theron", "advisor", "varen", "occult", "obsidian_circle", "magic", "gloomhaze"],
+  },
+  {
+    id: "npc_varen",
+    category: "npc",
+    title: "Lord Varen",
+    content: "Lord Varen inherited the region from his father after the Grey Tide raids left the old lord broken. He is young, cautious, and politically vulnerable. The Crossroads Merchants fund half his garrison. He suspects treachery within his court but cannot identify the source.",
+    tags: ["varen", "lord", "ruler", "politics", "merchants", "grey_tide", "garrison"],
+  },
+  {
+    id: "npc_miravel",
+    category: "npc",
+    title: "Miravel the Herbalist",
+    content: "Miravel runs a small apothecary near the eastern gate. She knows every plant in the marshes and trades regularly with the rangers. Rumor says she was once an Obsidian Circle initiate who fled before taking the final oath. She treats the wounded without asking questions.",
+    tags: ["miravel", "herbalist", "marshes", "obsidian_circle", "healer", "east_village", "potions"],
+  },
+  {
+    id: "npc_kael",
+    category: "npc",
+    title: "Kael Duskwander",
+    content: "Kael is a former Grey Blade who retired after a mission to the Northern Ruins left him with night terrors. He now drinks at the Crossed Swords tavern and tells stories to anyone who listens. His accounts of the ruins are the most detailed anyone has, but his hands shake when he talks about what he saw underground.",
+    tags: ["kael", "grey_blades", "northern_ruins", "tavern", "veteran", "underground"],
+  },
+  {
+    id: "npc_serra",
+    category: "npc",
+    title: "Serra, Merchant Guild Representative",
+    content: "Serra manages the Crossroads Merchants' Ashburg operations. She is polite, calculating, and controls most of the region's trade routes. She funds mercenary contracts that protect her caravans but also uses them to eliminate competitors. Nothing moves on the Trade Road without her knowledge.",
+    tags: ["serra", "merchants", "trade_road", "caravans", "economy", "politics"],
+  },
+  {
+    id: "npc_dunric",
+    category: "npc",
+    title: "Dunric, Captain of the Guard",
+    content: "Dunric is Lord Varen's garrison captain. Loyal but overwhelmed. His guards are underfunded and stretched thin across too many posts. He relies on the Ash Guild for tasks his men cannot handle and resents it. He suspects the Obsidian Circle has infiltrated the night watch.",
+    tags: ["dunric", "guard", "garrison", "varen", "obsidian_circle", "security"],
+  },
+  {
+    id: "npc_old_brennan",
+    category: "npc",
+    title: "Old Brennan, the Gravedigger",
+    content: "Brennan has tended Ashburg's cemetery for forty years. He has noticed graves disturbed in the past months. Bones removed cleanly, no signs of animal activity. He reported it to Dunric but was ignored. He keeps a tally in a leather notebook and the numbers are accelerating.",
+    tags: ["brennan", "cemetery", "undead", "necromancer", "bones", "graves"],
+  },
+  {
+    id: "npc_lira",
+    category: "npc",
+    title: "Lira, the Orphan Runner",
+    content: "Lira is a twelve-year-old who carries messages between the Grey Blades and their clients. She knows every alley and rooftop in Ashburg. She has been delivering sealed letters to a hooded figure near the mine entrance at night, not knowing what they contain.",
+    tags: ["lira", "grey_blades", "mine", "messages", "secrets", "child"],
+  },
+
+  // ════════ LOCATIONS ════════
+  {
+    id: "loc_gloomhaze",
+    category: "location",
+    title: "Gloomhaze Forest",
+    content: "The Gloomhaze is an ancient forest northeast of Ashburg where the canopy blocks most sunlight. Travelers report hearing whispers and losing their sense of direction. Seventeen people have disappeared in the past year. The trees near the center are covered in a black fungal growth that Miravel cannot identify.",
+    tags: ["gloomhaze", "forest", "disappearances", "fungus", "danger", "whispers"],
+  },
+  {
+    id: "loc_ruins",
+    category: "location",
+    title: "Northern Ruins",
+    content: "The Northern Ruins predate Ashburg by centuries. No one knows who built them. The stonework resists weathering in ways that suggest non-human engineering. Kael's expedition found intact chambers underground with symbols matching Obsidian Circle iconography. Lord Varen has forbidden civilian access.",
+    tags: ["northern_ruins", "ruins", "ancient", "underground", "obsidian_circle", "forbidden", "kael"],
+  },
+  {
+    id: "loc_mine",
+    category: "location",
+    title: "Abandoned Mine",
+    content: "The mine was a productive iron source until three years ago when miners broke into a natural cavern system. Two crews vanished. The remaining miners refused to return. Strange sounds echo from the lower shafts at night. The Crossroads Merchants want it reopened for the iron deposits.",
+    tags: ["mine", "iron", "caverns", "miners", "disappeared", "merchants", "underground"],
+  },
+  {
+    id: "loc_marshes",
+    category: "location",
+    title: "Grimfen Marshes",
+    content: "The marshes south of Ashburg are a breeding ground for venomous creatures and toxic plants. Miravel harvests rare ingredients here under armed escort. Deep in the marshes lies a stone circle that glows faintly during new moons. The Obsidian Circle has been seen near the stone circle.",
+    tags: ["marshes", "grimfen", "venom", "stone_circle", "obsidian_circle", "miravel", "toxic"],
+  },
+  {
+    id: "loc_trade_road",
+    category: "location",
+    title: "The Trade Road",
+    content: "The main artery connecting Ashburg to the wider region. Serra's caravans travel it daily under armed guard. Bandit attacks have increased threefold in the past two months. The bandits seem organized and well-informed about caravan schedules, suggesting an inside source.",
+    tags: ["trade_road", "caravans", "bandits", "serra", "merchants", "ambush"],
+  },
+  {
+    id: "loc_east_village",
+    category: "location",
+    title: "Eastern Village (Thornfield)",
+    content: "Thornfield was a farming hamlet east of Ashburg. It was partially destroyed during the Grey Tide raids and never fully rebuilt. A few families remain. Recently, livestock has been found drained of blood at night. The villagers blame the forest but the marks are too precise for animals.",
+    tags: ["east_village", "thornfield", "grey_tide", "livestock", "blood", "farming"],
+  },
+  {
+    id: "loc_guild_hall",
+    category: "location",
+    title: "The Ash Guild Hall",
+    content: "The guild operates from a converted warehouse near the west gate. Varek negotiated the lease from the Merchants for a pittance in exchange for priority contracts. The basement is off limits to new recruits. Ironhammer's forge runs day and night. The contract board fills faster than it empties.",
+    tags: ["guild", "varek", "ironhammer", "warehouse", "contracts", "west_gate"],
+  },
+  {
+    id: "loc_crossed_swords",
+    category: "location",
+    title: "The Crossed Swords Tavern",
+    content: "The only tavern in Ashburg where mercenaries, guards, and Grey Blades drink side by side. Information trades faster than ale here. The owner, a retired sellsword named Harl, keeps a neutral house. Fights happen but weapons stay sheathed or you are banned for life.",
+    tags: ["tavern", "crossed_swords", "grey_blades", "mercenaries", "information", "harl"],
+  },
+
+  // ════════ FACTIONS ════════
+  {
+    id: "fac_ash_guild",
+    category: "faction",
+    title: "The Ash Guild",
+    content: "A mercenary company operating legally under Lord Varen's charter. Founded by Varek three years ago from Grey Blade deserters and independent fighters. The guild handles jobs the garrison cannot or will not take. Reputation is mixed: effective but ruthless. Currently forty active members.",
+    tags: ["guild", "varek", "mercenaries", "varen", "charter", "grey_blades"],
+  },
+  {
+    id: "fac_grey_blades",
+    category: "faction",
+    title: "The Grey Blades",
+    content: "An older mercenary outfit that operates in the shadows. They take contracts the Ash Guild refuses: assassinations, intimidation, smuggling. Led by a figure known only as the Pale Hand. Their relationship with the Ash Guild is tense. Several guild members are former Grey Blades.",
+    tags: ["grey_blades", "mercenaries", "pale_hand", "assassination", "smuggling", "shadow"],
+  },
+  {
+    id: "fac_obsidian",
+    category: "faction",
+    title: "The Obsidian Circle",
+    content: "A secretive occult order studying forbidden magic. They have been present in the region for decades but have grown bolder recently. Their rituals require components found only in the marshes and the ruins. Theron monitors their activity. The Circle believes they are preparing for something they call the Convergence.",
+    tags: ["obsidian_circle", "occult", "magic", "rituals", "convergence", "theron", "marshes", "ruins"],
+  },
+  {
+    id: "fac_merchants",
+    category: "faction",
+    title: "The Crossroads Merchants",
+    content: "A trade consortium that controls commerce in and out of Ashburg. Led by Serra, they fund the garrison and shape policy through economic pressure. They want the mine reopened and the Trade Road secured. Their interests are purely financial but their influence is political.",
+    tags: ["merchants", "serra", "trade", "economy", "mine", "trade_road", "politics", "garrison"],
+  },
+  {
+    id: "fac_guard",
+    category: "faction",
+    title: "Ashburg Guard",
+    content: "Lord Varen's official garrison. Sixty guards total, many inexperienced recruits. Dunric leads them competently but with limited resources. They patrol the town and the Trade Road but cannot cover the wilds. Suspected infiltration by the Obsidian Circle within the night watch.",
+    tags: ["guard", "dunric", "varen", "garrison", "patrols", "obsidian_circle", "night_watch"],
+  },
+
+  // ════════ CREATURES ════════
+  {
+    id: "crea_gloomhaze",
+    category: "creature",
+    title: "Creatures of Gloomhaze Forest",
+    content: "The forest harbors shadow-touched wolves that hunt in packs and track prey by sound rather than scent. Deeper in, fungal stalkers blend with the infected trees. Survivors describe a massive shape moving through the canopy. Miravel believes the black fungus is altering the wildlife.",
+    tags: ["gloomhaze", "wolves", "fungus", "forest", "shadow", "stalker", "miravel"],
+  },
+  {
+    id: "crea_ruins",
+    category: "creature",
+    title: "Creatures of the Northern Ruins",
+    content: "The ruins are home to bone constructs: skeletal figures assembled from mismatched remains and animated by unknown means. They patrol fixed routes like guards following orders. Deeper chambers contain larger constructs that speak in a dead language. The animation source has not been found.",
+    tags: ["northern_ruins", "undead", "bone", "constructs", "animated", "underground", "necromancer"],
+  },
+  {
+    id: "crea_mine",
+    category: "creature",
+    title: "Creatures of the Abandoned Mine",
+    content: "The mine's lower levels are infested with burrowing predators that collapse tunnels behind their prey. Iron-crusted beetles the size of dogs nest near ore veins. Miners' reports before the closure mentioned pale humanoid shapes in the deepest cavern, but these were dismissed as panic.",
+    tags: ["mine", "burrowers", "beetles", "iron", "underground", "humanoid", "caverns"],
+  },
+  {
+    id: "crea_marshes",
+    category: "creature",
+    title: "Creatures of the Grimfen Marshes",
+    content: "The marshes breed venomfangs: serpentine creatures with paralytic bites. Bog crawlers lurk beneath the surface and drag prey under. Near the stone circle, warped amphibians with bioluminescent patterns have been spotted. Miravel notes these mutations began two years ago.",
+    tags: ["marshes", "venomfang", "serpent", "bog_crawler", "mutations", "stone_circle", "miravel"],
+  },
+  {
+    id: "crea_road",
+    category: "creature",
+    title: "Threats on the Trade Road",
+    content: "Beyond organized bandits, the Trade Road passes through scrubland where territorial beasts den. Dusk jackals attack at twilight in coordinated groups. Displaced creatures from the Gloomhaze have been migrating south toward the road, likely driven out by whatever is growing in the forest.",
+    tags: ["trade_road", "bandits", "jackals", "gloomhaze", "migration", "scrubland"],
+  },
+  {
+    id: "crea_village",
+    category: "creature",
+    title: "Threats near Thornfield",
+    content: "The blood-draining attacks on livestock match no known predator in the region. Brennan found similar markings on a corpse in the cemetery. The Grey Blades investigated briefly but withdrew without explanation. Whatever hunts near Thornfield operates with intelligence and avoids traps.",
+    tags: ["east_village", "thornfield", "blood", "predator", "brennan", "grey_blades", "intelligent"],
+  },
+
+  // ════════ EVENTS ════════
+  {
+    id: "event_grey_tide",
+    category: "event",
+    title: "The Grey Tide Raids",
+    content: "Five years ago, a coordinated force of raiders struck Ashburg and the surrounding settlements. Thornfield was half-destroyed. The old lord died from his wounds. Varek distinguished himself defending the east gate but was disgusted by the guard's slow response. The raiders were never identified.",
+    tags: ["grey_tide", "raids", "thornfield", "varek", "east_village", "varen", "history"],
+  },
+  {
+    id: "event_foundry",
+    category: "event",
+    title: "The Foundry Collapse",
+    content: "Two years ago, an experimental forge built to process cursed ore from the mine exploded. Three smiths died. Ironhammer survived with burns. The Obsidian Circle had commissioned the work through intermediaries. Ironhammer refuses to discuss what the ore was meant to become.",
+    tags: ["foundry", "collapse", "ironhammer", "cursed_ore", "mine", "obsidian_circle", "explosion"],
+  },
+  {
+    id: "event_disappearances",
+    category: "event",
+    title: "The Gloomhaze Disappearances",
+    content: "Seventeen people have vanished in the Gloomhaze Forest over the past year. Woodcutters, hunters, one patrol of three guards. No bodies recovered. Theron ordered a magical survey that revealed concentrated arcane energy near the forest center. Lord Varen has offered a bounty but no one has returned from investigating.",
+    tags: ["gloomhaze", "disappearances", "theron", "magic", "bounty", "varen", "arcane"],
+  },
+  {
+    id: "event_mine_closure",
+    category: "event",
+    title: "The Mine Closure",
+    content: "When miners broke through into the natural cavern system, the first crew to explore it vanished within an hour. The second crew sent to find them also disappeared. Only one miner escaped the second expedition. He could not speak for days. When he did, he said only: 'They were waiting for us.' The mine was sealed that week.",
+    tags: ["mine", "closure", "caverns", "disappeared", "sealed", "underground"],
+  },
+  {
+    id: "event_convergence",
+    category: "event",
+    title: "The Coming Convergence",
+    content: "Documents seized from an Obsidian Circle safehouse reference an event called the Convergence. The texts describe an alignment of arcane ley lines beneath the region. The Circle believes this will amplify ritual magic a hundredfold. Theron estimates the Convergence will occur within months. The Circle is accelerating its preparations.",
+    tags: ["convergence", "obsidian_circle", "ley_lines", "magic", "theron", "ritual", "arcane"],
+  },
+  {
+    id: "event_grave_robbing",
+    category: "event",
+    title: "The Grave Robberies",
+    content: "Brennan's records show 31 graves disturbed over four months. The bones are removed with surgical precision. No valuables taken. The pattern spirals outward from the cemetery's oldest section. Dunric dismissed it as wild animals. Brennan found chisel marks on the coffin lids.",
+    tags: ["cemetery", "brennan", "bones", "graves", "undead", "necromancer", "dunric"],
+  },
+  {
+    id: "event_caravan_attacks",
+    category: "event",
+    title: "Organized Caravan Raids",
+    content: "The recent bandit attacks on the Trade Road target specific high-value shipments. The bandits know which caravans carry what, suggesting a leak within Serra's operation or the garrison. Serra has increased rewards for bandit elimination but privately suspects Dunric's night watch.",
+    tags: ["trade_road", "bandits", "caravans", "serra", "dunric", "night_watch", "leak"],
+  },
+
+  // ════════ ITEMS & ARTIFACTS ════════
+  {
+    id: "item_cursed_ore",
+    category: "item",
+    title: "Cursed Ore",
+    content: "A dark metalite found only in the deepest mine shafts. It absorbs light and feels warm to the touch. The Obsidian Circle commissioned weapons made from it. Ironhammer destroyed his prototypes after the Foundry Collapse. Small fragments still circulate on the black market. The ore reacts to arcane energy.",
+    tags: ["cursed_ore", "mine", "obsidian_circle", "ironhammer", "foundry", "magic", "weapons"],
+  },
+  {
+    id: "item_circle_amulets",
+    category: "item",
+    title: "Circle Amulets",
+    content: "Members of the Obsidian Circle carry small obsidian pendants engraved with a spiral pattern. The amulets serve as identification and as focal points for minor rituals. Theron has confiscated several and notes they are growing more complex in design. Recent amulets contain a fragment of cursed ore at the center.",
+    tags: ["obsidian_circle", "amulet", "obsidian", "ritual", "theron", "cursed_ore", "magic"],
+  },
+  {
+    id: "item_pale_ledger",
+    category: "item",
+    title: "The Pale Ledger",
+    content: "A coded ledger rumored to contain every contract the Grey Blades have ever taken, including the names of clients. The Pale Hand guards it personally. Several factions would pay a fortune for it. Kael claims he saw it once: a thin book bound in white leather, always locked.",
+    tags: ["grey_blades", "pale_hand", "ledger", "secrets", "kael", "contracts"],
+  },
+  {
+    id: "item_varen_seal",
+    category: "item",
+    title: "Lord Varen's Seal",
+    content: "The official seal of regional authority. Whoever holds it commands the garrison legally. Varen keeps it on his person at all times after an attempted theft three months ago. The thief was found dead in an alley before interrogation. The seal is the true prize in Ashburg's political games.",
+    tags: ["varen", "seal", "authority", "garrison", "politics", "theft"],
+  },
+
+  // ════════ RUMORS & HOOKS ════════
+  {
+    id: "rumor_necromancer",
+    category: "rumor",
+    title: "The Necromancer of Ashburg",
+    content: "Whispers connect the grave robberies, the bone constructs in the ruins, and the mine disappearances to a single figure: a necromancer operating in the region. No one has been identified. Theron believes the necromancer is preparing a large-scale ritual. Brennan thinks they are building an army.",
+    tags: ["necromancer", "undead", "graves", "ruins", "mine", "theron", "brennan", "ritual"],
+  },
+  {
+    id: "rumor_pale_hand",
+    category: "rumor",
+    title: "The Pale Hand's Identity",
+    content: "No one knows who leads the Grey Blades. Theories range from a disgraced noble to a rogue Obsidian Circle mage. Kael suspects it is someone already known in Ashburg, hiding in plain sight. The Pale Hand has never been seen fighting but their orders are carried out without question.",
+    tags: ["pale_hand", "grey_blades", "identity", "mystery", "kael", "obsidian_circle"],
+  },
+  {
+    id: "rumor_forest_heart",
+    category: "rumor",
+    title: "The Heart of the Gloomhaze",
+    content: "Hunters who ventured furthest into the Gloomhaze before turning back describe a clearing where the black fungus is thickest. At the center stands something they cannot describe clearly. Their memories blur. One hunter drew it: a tall dark shape like a tree but wrong. Theron wants it investigated.",
+    tags: ["gloomhaze", "fungus", "heart", "clearing", "theron", "mystery", "disappearances"],
+  },
+  {
+    id: "rumor_mine_voices",
+    category: "rumor",
+    title: "Voices from the Mine",
+    content: "People living near the sealed mine entrance report hearing rhythmic tapping and faint voices at night. The sounds come from deep underground. Dunric posted a guard but the guard requested transfer after one shift. He said the voices were calling names. Some were names of the missing miners.",
+    tags: ["mine", "voices", "underground", "miners", "dunric", "supernatural", "names"],
+  },
+  {
+    id: "rumor_serra_betrayal",
+    category: "rumor",
+    title: "Serra's Double Game",
+    content: "Some believe Serra is funding both the garrison and the bandits attacking her own caravans, using the chaos to push competing merchants out of the region. Varek has received anonymous tips suggesting this but has no proof. The Ash Guild depends on merchant contracts, making investigation risky.",
+    tags: ["serra", "merchants", "bandits", "trade_road", "varek", "guild", "betrayal"],
+  },
+  {
+    id: "rumor_thornfield_cult",
+    category: "rumor",
+    title: "The Thornfield Gatherings",
+    content: "A Thornfield farmer reported seeing robed figures gathering in the ruined chapel at night. When he investigated the next morning, he found a circle drawn in ash on the floor and the smell of burnt hair. The chapel is supposedly consecrated ground. The figures have not been seen since he reported it.",
+    tags: ["east_village", "thornfield", "obsidian_circle", "ritual", "chapel", "cult"],
+  },
+];
+
+export default LORE_KNOWLEDGE_BASE;
