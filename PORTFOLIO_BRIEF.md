@@ -1,8 +1,8 @@
 # La Guilde des Cendres — AI-Powered RPG
 
 **Portfolio project for Prompt Specialist position**
-Live demo: [Vercel deployment URL]
-Source code: [GitHub repository URL]
+Live demo: https://guilde-cendres.vercel.app
+Source code: https://github.com/payrecyprien/guilde-cendres-dm
 
 ---
 
